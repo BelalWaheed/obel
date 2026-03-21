@@ -1,5 +1,6 @@
+import { useEffect } from 'react'
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -10,8 +11,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  LogOut,
+  User,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/stores/authStore'
+import { useTaskStore } from '@/stores/taskStore'
+import { useTimerStore } from '@/stores/timerStore'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -23,6 +29,43 @@ const navItems = [
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const navigate = useNavigate()
+
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const fetchTasks = useTaskStore((s) => s.fetchTasks)
+  const loadFromUser = useTimerStore((s) => s.loadFromUser)
+
+  // Mini timer indicator
+  const isTimerRunning = useTimerStore((s) => s.isRunning)
+  const timerRemaining = useTimerStore((s) => s.timeRemaining)
+  const timerMode = useTimerStore((s) => s.mode)
+
+  const timerMinutes = Math.floor(timerRemaining / 60)
+  const timerSeconds = timerRemaining % 60
+  const timerDisplay = `${String(timerMinutes).padStart(2, '0')}:${String(timerSeconds).padStart(2, '0')}`
+
+  // Update document title when timer is running
+  useEffect(() => {
+    if (isTimerRunning) {
+      const modeLabel = timerMode === 'focus' ? 'Focus' : timerMode === 'shortBreak' ? 'Break' : 'Long Break'
+      document.title = `${timerDisplay} — ${modeLabel} | FocusFlow`
+    } else {
+      document.title = 'FocusFlow'
+    }
+    return () => { document.title = 'FocusFlow' }
+  }, [isTimerRunning, timerDisplay, timerMode])
+
+  // Load data on mount
+  useEffect(() => {
+    fetchTasks()
+    loadFromUser()
+  }, [fetchTasks, loadFromUser])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -50,6 +93,37 @@ export default function AppLayout() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Mini timer indicator — visible when timer is running */}
+        {isTimerRunning && (
+          <NavLink to="/pomodoro" className="mx-2 mt-3">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono font-bold ${
+                timerMode === 'focus'
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-emerald-500/10 text-emerald-500'
+              }`}
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className={`w-2 h-2 rounded-full ${
+                  timerMode === 'focus' ? 'bg-primary' : 'bg-emerald-500'
+                }`}
+              />
+              {!collapsed && (
+                <>
+                  <span>{timerDisplay}</span>
+                  <span className="text-[10px] opacity-70">
+                    {timerMode === 'focus' ? 'Focus' : 'Break'}
+                  </span>
+                </>
+              )}
+            </motion.div>
+          </NavLink>
+        )}
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-2 space-y-1 overflow-hidden">
@@ -83,8 +157,45 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        {/* Collapse toggle */}
-        <div className="p-2 border-t border-border">
+        {/* User section */}
+        <div className="border-t border-border p-2 space-y-1">
+          {/* User info */}
+          {user && !collapsed && (
+            <div className="flex items-center gap-2 px-3 py-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{user.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Logout */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+            title={collapsed ? 'Logout' : undefined}
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="whitespace-nowrap overflow-hidden"
+                >
+                  Logout
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+
+          {/* Collapse toggle */}
           <Button
             variant="ghost"
             size="sm"

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Calendar, Clock, Target, Bell } from 'lucide-react'
+import { Calendar, Target, Bell } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 
 export default function CalendarPage() {

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { TooltipProvider } from '@/components/ui/tooltip'
 import AppLayout from '@/components/layout/AppLayout'
+import AuthGuard from '@/components/layout/AuthGuard'
+import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import TasksPage from '@/pages/TasksPage'
 import PomodoroPage from '@/pages/PomodoroPage'
@@ -9,9 +10,13 @@ import CalendarPage from '@/pages/CalendarPage'
 
 export default function App() {
   return (
-    <TooltipProvider delayDuration={300}>
-      <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Protected */}
+        <Route element={<AuthGuard />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
@@ -19,8 +24,8 @@ export default function App() {
             <Route path="/habits" element={<HabitsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
           </Route>
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }

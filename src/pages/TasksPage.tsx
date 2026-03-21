@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
@@ -7,13 +7,13 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-
   Tag,
   Trash2,
   Edit3,
   ChevronDown,
   ChevronRight,
   X,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
 import { Progress } from '@/components/ui/progress'
 import { useTaskStore, type Priority, type TaskStatus, type Task } from '@/stores/taskStore'
 import dayjs from 'dayjs'
@@ -57,12 +56,8 @@ const statusConfig: Record<TaskStatus, { label: string; icon: typeof Circle }> =
 
 export default function TasksPage() {
   const {
-    filterStatus,
-    filterPriority,
-    searchQuery,
-    setFilterStatus,
-    setFilterPriority,
-    setSearchQuery,
+    tasks,
+    isLoading,
     getFilteredTasks,
     getAllTags,
     addTask,
@@ -74,9 +69,15 @@ export default function TasksPage() {
     deleteSubtask,
   } = useTaskStore()
 
+  // Local filter state
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterPriority, setFilterPriority] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Form state
   const [formTitle, setFormTitle] = useState('')
@@ -87,8 +88,11 @@ export default function TasksPage() {
   const [formStatus, setFormStatus] = useState<TaskStatus>('todo')
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
-  const tasks = getFilteredTasks()
-  const allTags = getAllTags()
+  const filteredTasks = useMemo(
+    () => getFilteredTasks(filterStatus, filterPriority, searchQuery),
+    [tasks, filterStatus, filterPriority, searchQuery, getFilteredTasks]
+  )
+  const allTags = useMemo(() => getAllTags(), [tasks, getAllTags])
 
   const openCreateModal = () => {
     setEditingTask(null)
@@ -112,15 +116,13 @@ export default function TasksPage() {
     setIsModalOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formTitle.trim()) return
-    const tags = formTags
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean)
+    setIsSaving(true)
+    const tags = formTags.split(',').map((t) => t.trim()).filter(Boolean)
 
     if (editingTask) {
-      updateTask(editingTask.id, {
+      await updateTask(editingTask.id, {
         title: formTitle,
         description: formDescription,
         priority: formPriority,
@@ -129,7 +131,7 @@ export default function TasksPage() {
         status: formStatus,
       })
     } else {
-      addTask({
+      await addTask({
         title: formTitle,
         description: formDescription,
         priority: formPriority,
@@ -139,20 +141,19 @@ export default function TasksPage() {
         status: formStatus,
       })
     }
+    setIsSaving(false)
     setIsModalOpen(false)
   }
 
-  const handleAddSubtask = (taskId: string) => {
+  const handleAddSubtask = async (taskId: string) => {
     if (!newSubtaskTitle.trim()) return
-    addSubtask(taskId, newSubtaskTitle)
+    await addSubtask(taskId, newSubtaskTitle)
     setNewSubtaskTitle('')
   }
 
   const getSubtaskProgress = (task: Task) => {
     if (task.subtasks.length === 0) return 0
-    return Math.round(
-      (task.subtasks.filter((s) => s.completed).length / task.subtasks.length) * 100
-    )
+    return Math.round((task.subtasks.filter((s) => s.completed).length / task.subtasks.length) * 100)
   }
 
   return (
@@ -176,24 +177,12 @@ export default function TasksPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+            <Input placeholder="Search tasks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
           </div>
-
           <div className="flex items-center gap-2">
             <ListFilter className="w-4 h-4 text-muted-foreground" />
-
-            <Select
-              value={filterStatus}
-              onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v ?? 'all')}>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="todo">To Do</SelectItem>
@@ -201,14 +190,8 @@ export default function TasksPage() {
                 <SelectItem value="done">Done</SelectItem>
               </SelectContent>
             </Select>
-
-            <Select
-              value={filterPriority}
-              onValueChange={(v) => setFilterPriority(v as typeof filterPriority)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
+            <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v ?? 'all')}>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Priority" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Priority</SelectItem>
                 <SelectItem value="urgent">🔴 Urgent</SelectItem>
@@ -218,17 +201,11 @@ export default function TasksPage() {
               </SelectContent>
             </Select>
           </div>
-
           {allTags.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <Tag className="w-3.5 h-3.5 text-muted-foreground" />
               {allTags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => setSearchQuery(tag)}
-                >
+                <Badge key={tag} variant="secondary" className="cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setSearchQuery(tag)}>
                   {tag}
                 </Badge>
               ))}
@@ -237,15 +214,19 @@ export default function TasksPage() {
         </div>
       </Card>
 
+      {/* Loading */}
+      {isLoading && (
+        <div className="text-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground mt-2">Loading tasks...</p>
+        </div>
+      )}
+
       {/* Task List */}
       <div className="space-y-2">
         <AnimatePresence mode="popLayout">
-          {tasks.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16"
-            >
+          {!isLoading && filteredTasks.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <ListFilter className="w-8 h-8 text-primary" />
               </div>
@@ -257,138 +238,52 @@ export default function TasksPage() {
               </p>
             </motion.div>
           ) : (
-            tasks.map((task, i) => {
+            filteredTasks.map((task, i) => {
               const StatusIcon = statusConfig[task.status].icon
               const isExpanded = expandedTaskId === task.id
               const subtaskProgress = getSubtaskProgress(task)
 
               return (
-                <motion.div
-                  key={task.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ delay: i * 0.03 }}
-                >
-                  <Card
-                    className={`p-4 transition-all duration-200 hover:shadow-md cursor-pointer group ${
-                      task.status === 'done' ? 'opacity-60' : ''
-                    }`}
-                  >
+                <motion.div key={task.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} transition={{ delay: i * 0.03 }}>
+                  <Card className={`p-4 transition-all duration-200 hover:shadow-md cursor-pointer group ${task.status === 'done' ? 'opacity-60' : ''}`}>
                     <div className="flex items-start gap-3">
-                      {/* Completion toggle */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleComplete(task.id)
-                        }}
-                        className="mt-0.5 shrink-0"
-                        title={task.status === 'done' ? 'Mark as todo' : 'Mark as done'}
-                      >
-                        <StatusIcon
-                          className={`w-5 h-5 transition-colors ${
-                            task.status === 'done'
-                              ? 'text-green-500'
-                              : task.status === 'in-progress'
-                              ? 'text-primary'
-                              : 'text-muted-foreground hover:text-primary'
-                          }`}
-                        />
+                      <button onClick={(e) => { e.stopPropagation(); toggleComplete(task.id) }} className="mt-0.5 shrink-0" title={task.status === 'done' ? 'Mark as todo' : 'Mark as done'}>
+                        <StatusIcon className={`w-5 h-5 transition-colors ${task.status === 'done' ? 'text-green-500' : task.status === 'in-progress' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                       </button>
 
-                      {/* Content */}
-                      <div
-                        className="flex-1 min-w-0"
-                        onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
-                      >
+                      <div className="flex-1 min-w-0" onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}>
                         <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`font-medium ${
-                              task.status === 'done' ? 'line-through text-muted-foreground' : ''
-                            }`}
-                          >
-                            {task.title}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${priorityConfig[task.priority].color}`}
-                          >
+                          <span className={`font-medium ${task.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>{task.title}</span>
+                          <Badge variant="outline" className={`text-xs ${priorityConfig[task.priority].color}`}>
                             {priorityConfig[task.priority].icon} {priorityConfig[task.priority].label}
                           </Badge>
                         </div>
-
-                        {task.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {task.description}
-                          </p>
-                        )}
-
+                        {task.description && <p className="text-sm text-muted-foreground line-clamp-1">{task.description}</p>}
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          {task.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-
+                          {task.tags.map((tag) => (<Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>))}
                           {task.subtasks.length > 0 && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <div className="w-16">
-                                <Progress value={subtaskProgress} className="h-1.5" />
-                              </div>
-                              <span>
-                                {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
-                              </span>
+                              <div className="w-16"><Progress value={subtaskProgress} className="h-1.5" /></div>
+                              <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}</span>
                             </div>
                           )}
-
                           {task.dueDate && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {dayjs(task.dueDate).fromNow()}
+                              <Clock className="w-3 h-3" />{dayjs(task.dueDate).fromNow()}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Edit"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openEditModal(task)
-                          }}
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={(e) => { e.stopPropagation(); openEditModal(task) }}>
                           <Edit3 className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          title="Delete"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deleteTask(task.id)
-                          }}
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete" onClick={(e) => { e.stopPropagation(); deleteTask(task.id) }}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setExpandedTaskId(isExpanded ? null : task.id)
-                          }}
-                          className="p-1"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          )}
+                        <button onClick={(e) => { e.stopPropagation(); setExpandedTaskId(isExpanded ? null : task.id) }} className="p-1">
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                         </button>
                       </div>
                     </div>
@@ -396,74 +291,25 @@ export default function TasksPage() {
                     {/* Expanded Subtasks */}
                     <AnimatePresence>
                       {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                           <div className="mt-4 pt-4 border-t border-border space-y-2">
-                            {task.description && (
-                              <p className="text-sm text-muted-foreground mb-3">
-                                {task.description}
-                              </p>
-                            )}
-
+                            {task.description && <p className="text-sm text-muted-foreground mb-3">{task.description}</p>}
                             <h4 className="text-sm font-medium flex items-center gap-2">
                               Subtasks
-                              {task.subtasks.length > 0 && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})
-                                </span>
-                              )}
+                              {task.subtasks.length > 0 && <span className="text-xs text-muted-foreground">({task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})</span>}
                             </h4>
-
                             {task.subtasks.map((subtask) => (
-                              <div
-                                key={subtask.id}
-                                className="flex items-center gap-2 group/subtask"
-                              >
-                                <Checkbox
-                                  checked={subtask.completed}
-                                  onCheckedChange={() => toggleSubtask(task.id, subtask.id)}
-                                />
-                                <span
-                                  className={`text-sm flex-1 ${
-                                    subtask.completed
-                                      ? 'line-through text-muted-foreground'
-                                      : ''
-                                  }`}
-                                >
-                                  {subtask.title}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover/subtask:opacity-100 transition-opacity"
-                                  onClick={() => deleteSubtask(task.id, subtask.id)}
-                                >
+                              <div key={subtask.id} className="flex items-center gap-2 group/subtask">
+                                <Checkbox checked={subtask.completed} onCheckedChange={() => toggleSubtask(task.id, subtask.id)} />
+                                <span className={`text-sm flex-1 ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}>{subtask.title}</span>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/subtask:opacity-100 transition-opacity" onClick={() => deleteSubtask(task.id, subtask.id)}>
                                   <X className="w-3 h-3" />
                                 </Button>
                               </div>
                             ))}
-
                             <div className="flex items-center gap-2 mt-2">
-                              <Input
-                                placeholder="Add subtask..."
-                                value={newSubtaskTitle}
-                                onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleAddSubtask(task.id)
-                                }}
-                                className="h-8 text-sm"
-                              />
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAddSubtask(task.id)}
-                              >
-                                <Plus className="w-3 h-3" />
-                              </Button>
+                              <Input placeholder="Add subtask..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(task.id) }} className="h-8 text-sm" />
+                              <Button variant="outline" size="sm" onClick={() => handleAddSubtask(task.id)}><Plus className="w-3 h-3" /></Button>
                             </div>
                           </div>
                         </motion.div>
@@ -483,38 +329,20 @@ export default function TasksPage() {
           <DialogHeader>
             <DialogTitle>{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Title</label>
-              <Input
-                placeholder="Task title..."
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSave()
-                }}
-                autoFocus
-              />
+              <Input placeholder="Task title..." value={formTitle} onChange={(e) => setFormTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }} autoFocus />
             </div>
-
             <div>
               <label className="text-sm font-medium mb-1.5 block">Description</label>
-              <textarea
-                placeholder="Add a description..."
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-              />
+              <textarea placeholder="Add a description..." value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none" />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Priority</label>
                 <Select value={formPriority} onValueChange={(v) => setFormPriority(v as Priority)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">🔵 Low</SelectItem>
                     <SelectItem value="medium">🟡 Medium</SelectItem>
@@ -523,13 +351,10 @@ export default function TasksPage() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Status</label>
                 <Select value={formStatus} onValueChange={(v) => setFormStatus(v as TaskStatus)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todo">To Do</SelectItem>
                     <SelectItem value="in-progress">In Progress</SelectItem>
@@ -538,32 +363,19 @@ export default function TasksPage() {
                 </Select>
               </div>
             </div>
-
             <div>
               <label className="text-sm font-medium mb-1.5 block">Tags</label>
-              <Input
-                placeholder="Enter tags separated by commas..."
-                value={formTags}
-                onChange={(e) => setFormTags(e.target.value)}
-              />
+              <Input placeholder="Enter tags separated by commas..." value={formTags} onChange={(e) => setFormTags(e.target.value)} />
             </div>
-
             <div>
               <label className="text-sm font-medium mb-1.5 block">Due Date</label>
-              <Input
-                type="date"
-                value={formDueDate}
-                onChange={(e) => setFormDueDate(e.target.value)}
-              />
+              <Input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} />
             </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!formTitle.trim()}>
-              {editingTask ? 'Save Changes' : 'Create Task'}
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!formTitle.trim() || isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingTask ? 'Save Changes' : 'Create Task'}
             </Button>
           </DialogFooter>
         </DialogContent>

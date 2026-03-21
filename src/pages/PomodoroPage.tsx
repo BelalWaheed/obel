@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   Play,
@@ -32,25 +32,12 @@ import { useTimerStore, type TimerMode } from '@/stores/timerStore'
 import { useTaskStore } from '@/stores/taskStore'
 
 const modeConfig: Record<TimerMode, { label: string; color: string; bgColor: string; icon: typeof Timer }> = {
-  focus: {
-    label: 'Focus Time',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-    icon: Zap,
-  },
-  shortBreak: {
-    label: 'Short Break',
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-500/10',
-    icon: Coffee,
-  },
-  longBreak: {
-    label: 'Long Break',
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
-    icon: Coffee,
-  },
+  focus: { label: 'Focus Time', color: 'text-primary', bgColor: 'bg-primary/10', icon: Zap },
+  shortBreak: { label: 'Short Break', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', icon: Coffee },
+  longBreak: { label: 'Long Break', color: 'text-blue-500', bgColor: 'bg-blue-500/10', icon: Coffee },
 }
+
+const focusPresets = [15, 20, 25, 30, 40, 45, 60]
 
 export default function PomodoroPage() {
   const timeRemaining = useTimerStore((s) => s.timeRemaining)
@@ -64,7 +51,6 @@ export default function PomodoroPage() {
   const pause = useTimerStore((s) => s.pause)
   const reset = useTimerStore((s) => s.reset)
   const skip = useTimerStore((s) => s.skip)
-  const tick = useTimerStore((s) => s.tick)
   const updateSettings = useTimerStore((s) => s.updateSettings)
   const setLinkedTask = useTimerStore((s) => s.setLinkedTask)
 
@@ -80,26 +66,6 @@ export default function PomodoroPage() {
   const [autoBreaks, setAutoBreaks] = useState(settings.autoStartBreaks)
   const [autoFocus, setAutoFocus] = useState(settings.autoStartFocus)
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(tick, 1000)
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isRunning, tick])
-
-  useEffect(() => {
-    setLocalFocus(settings.focusDuration)
-    setLocalShortBreak(settings.shortBreakDuration)
-    setLocalLongBreak(settings.longBreakDuration)
-    setLocalInterval(settings.longBreakInterval)
-    setAutoBreaks(settings.autoStartBreaks)
-    setAutoFocus(settings.autoStartFocus)
-  }, [settings])
-
   const minutes = Math.floor(timeRemaining / 60)
   const seconds = timeRemaining % 60
   const totalDuration =
@@ -112,34 +78,15 @@ export default function PomodoroPage() {
   const config = modeConfig[mode]
   const ModeIcon = config.icon
 
-  // Compute today's sessions with stable memoization
   const todaySessions = useMemo(() => {
     const today = new Date().toDateString()
-    return sessionHistory.filter(
-      (s) => new Date(s.completedAt).toDateString() === today
-    )
+    return sessionHistory.filter((s) => new Date(s.completedAt).toDateString() === today)
   }, [sessionHistory])
 
-  const todayFocusMinutes = useMemo(() => {
-    return Math.round(
-      todaySessions
-        .filter((s) => s.mode === 'focus')
-        .reduce((acc, s) => acc + s.duration, 0) / 60
-    )
-  }, [todaySessions])
-
-  const todayFocusSessions = useMemo(() => {
-    return todaySessions.filter((s) => s.mode === 'focus').length
-  }, [todaySessions])
-
-  // Update document title
-  useEffect(() => {
-    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    document.title = isRunning ? `${timeStr} — ${config.label} | FocusFlow` : 'FocusFlow'
-    return () => {
-      document.title = 'FocusFlow'
-    }
-  }, [minutes, seconds, isRunning, config.label])
+  const todayFocusMinutes = useMemo(
+    () => Math.round(todaySessions.filter((s) => s.mode === 'focus').reduce((a, s) => a + s.duration, 0) / 60),
+    [todaySessions]
+  )
 
   const handleSaveSettings = () => {
     updateSettings({
@@ -151,6 +98,16 @@ export default function PomodoroPage() {
       autoStartFocus: autoFocus,
     })
     setShowSettings(false)
+  }
+
+  const openSettings = () => {
+    setLocalFocus(settings.focusDuration)
+    setLocalShortBreak(settings.shortBreakDuration)
+    setLocalLongBreak(settings.longBreakDuration)
+    setLocalInterval(settings.longBreakInterval)
+    setAutoBreaks(settings.autoStartBreaks)
+    setAutoFocus(settings.autoStartFocus)
+    setShowSettings(true)
   }
 
   const handleModeSwitch = (m: TimerMode) => {
@@ -167,19 +124,15 @@ export default function PomodoroPage() {
     }
   }
 
-  // Circular progress
   const radius = 140
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference - (progress / 100) * circumference
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">Pomodoro Timer</h1>
-        <p className="text-muted-foreground mt-1">
-          Stay focused, take breaks, and accomplish more.
-        </p>
+        <p className="text-muted-foreground mt-1">Stay focused, take breaks, and accomplish more.</p>
       </div>
 
       {/* Mode Selector */}
@@ -205,33 +158,17 @@ export default function PomodoroPage() {
       {/* Timer */}
       <div className="flex justify-center">
         <div className="relative w-[340px] h-[340px]">
-          {/* Background ring */}
           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 320 320">
-            <circle
-              cx="160"
-              cy="160"
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              className="text-muted/30"
-              strokeWidth="6"
-            />
+            <circle cx="160" cy="160" r={radius} fill="none" stroke="currentColor" className="text-muted/30" strokeWidth="6" />
             <motion.circle
-              cx="160"
-              cy="160"
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              className={config.color}
-              strokeWidth="6"
-              strokeLinecap="round"
+              cx="160" cy="160" r={radius} fill="none" stroke="currentColor"
+              className={config.color} strokeWidth="6" strokeLinecap="round"
               strokeDasharray={circumference}
               animate={{ strokeDashoffset }}
               transition={{ duration: 0.5, ease: 'easeInOut' }}
             />
           </svg>
 
-          {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <motion.div
               className={`p-3 rounded-2xl ${config.bgColor} mb-4`}
@@ -240,13 +177,10 @@ export default function PomodoroPage() {
             >
               <ModeIcon className={`w-6 h-6 ${config.color}`} />
             </motion.div>
-
             <div className="text-6xl font-bold tracking-tighter tabular-nums">
               {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
             </div>
-
             <p className={`text-sm font-medium mt-2 ${config.color}`}>{config.label}</p>
-
             {linkedTask && (
               <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
                 <Link2 className="w-3 h-3" />
@@ -262,36 +196,20 @@ export default function PomodoroPage() {
         <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={reset} title="Reset">
           <RotateCcw className="w-5 h-5" />
         </Button>
-
-        <Button
-          size="lg"
-          className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25"
-          onClick={isRunning ? pause : start}
-        >
+        <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={isRunning ? pause : start}>
           {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
         </Button>
-
         <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={skip} title="Skip">
           <SkipForward className="w-5 h-5" />
         </Button>
-
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-12 w-12 rounded-xl"
-          onClick={() => setShowSettings(true)}
-          title="Settings"
-        >
+        <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={openSettings} title="Settings">
           <Settings2 className="w-5 h-5" />
         </Button>
       </div>
 
       {/* Link Task */}
       <div className="flex justify-center">
-        <Select
-          value={linkedTaskId || 'none'}
-          onValueChange={(v) => setLinkedTask(v === 'none' ? null : v)}
-        >
+        <Select value={linkedTaskId || 'none'} onValueChange={(v) => setLinkedTask(v === 'none' ? null : v)}>
           <SelectTrigger className="w-[280px]">
             <div className="flex items-center gap-2">
               <Link2 className="w-4 h-4 text-muted-foreground" />
@@ -301,9 +219,7 @@ export default function PomodoroPage() {
           <SelectContent>
             <SelectItem value="none">No linked task</SelectItem>
             {activeTasks.map((task) => (
-              <SelectItem key={task.id} value={task.id}>
-                {task.title}
-              </SelectItem>
+              <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -320,12 +236,12 @@ export default function PomodoroPage() {
           <p className="text-sm text-muted-foreground">Focus Minutes Today</p>
         </Card>
         <Card className="p-4 text-center">
-          <p className="text-2xl font-bold">{todayFocusSessions}</p>
+          <p className="text-2xl font-bold">{todaySessions.filter((s) => s.mode === 'focus').length}</p>
           <p className="text-sm text-muted-foreground">Sessions Today</p>
         </Card>
       </div>
 
-      {/* Recent Sessions */}
+      {/* Today's Sessions */}
       {todaySessions.length > 0 && (
         <Card className="p-4 max-w-2xl mx-auto">
           <h3 className="font-semibold mb-3">Today's Sessions</h3>
@@ -334,22 +250,12 @@ export default function PomodoroPage() {
               const sc = modeConfig[session.mode]
               const Ic = sc.icon
               return (
-                <div
-                  key={session.id}
-                  className="flex items-center gap-3 text-sm"
-                >
-                  <div className={`p-1.5 rounded-lg ${sc.bgColor}`}>
-                    <Ic className={`w-3.5 h-3.5 ${sc.color}`} />
-                  </div>
+                <div key={session.id} className="flex items-center gap-3 text-sm">
+                  <div className={`p-1.5 rounded-lg ${sc.bgColor}`}><Ic className={`w-3.5 h-3.5 ${sc.color}`} /></div>
                   <span className="flex-1">{sc.label}</span>
-                  <span className="text-muted-foreground">
-                    {Math.round(session.duration / 60)} min
-                  </span>
+                  <span className="text-muted-foreground">{Math.round(session.duration / 60)} min</span>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(session.completedAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {new Date(session.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               )
@@ -361,85 +267,53 @@ export default function PomodoroPage() {
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Timer Settings</DialogTitle>
-          </DialogHeader>
-
+          <DialogHeader><DialogTitle>Timer Settings</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Focus Duration (minutes)
-              </label>
-              <Input
-                type="number"
-                min={1}
-                max={120}
-                value={localFocus}
-                onChange={(e) => setLocalFocus(Number(e.target.value))}
-              />
+              <label className="text-sm font-medium mb-1.5 block">Focus Duration (minutes)</label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {focusPresets.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setLocalFocus(m)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      localFocus === m
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {m} min
+                  </button>
+                ))}
+              </div>
+              <Input type="number" min={1} max={120} value={localFocus} onChange={(e) => setLocalFocus(Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Short Break (minutes)
-              </label>
-              <Input
-                type="number"
-                min={1}
-                max={30}
-                value={localShortBreak}
-                onChange={(e) => setLocalShortBreak(Number(e.target.value))}
-              />
+              <label className="text-sm font-medium mb-1.5 block">Short Break (minutes)</label>
+              <Input type="number" min={1} max={30} value={localShortBreak} onChange={(e) => setLocalShortBreak(Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Long Break (minutes)
-              </label>
-              <Input
-                type="number"
-                min={1}
-                max={60}
-                value={localLongBreak}
-                onChange={(e) => setLocalLongBreak(Number(e.target.value))}
-              />
+              <label className="text-sm font-medium mb-1.5 block">Long Break (minutes)</label>
+              <Input type="number" min={1} max={60} value={localLongBreak} onChange={(e) => setLocalLongBreak(Number(e.target.value))} />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Long Break After (sessions)
-              </label>
-              <Input
-                type="number"
-                min={2}
-                max={10}
-                value={localInterval}
-                onChange={(e) => setLocalInterval(Number(e.target.value))}
-              />
+              <label className="text-sm font-medium mb-1.5 block">Long Break After (sessions)</label>
+              <Input type="number" min={2} max={10} value={localInterval} onChange={(e) => setLocalInterval(Number(e.target.value))} />
             </div>
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={autoBreaks}
-                  onChange={(e) => setAutoBreaks(e.target.checked)}
-                  className="rounded"
-                />
+                <input type="checkbox" checked={autoBreaks} onChange={(e) => setAutoBreaks(e.target.checked)} className="rounded" />
                 Auto-start breaks
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={autoFocus}
-                  onChange={(e) => setAutoFocus(e.target.checked)}
-                  className="rounded"
-                />
+                <input type="checkbox" checked={autoFocus} onChange={(e) => setAutoFocus(e.target.checked)} className="rounded" />
                 Auto-start focus sessions
               </label>
             </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSettings(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowSettings(false)}>Cancel</Button>
             <Button onClick={handleSaveSettings}>Save Settings</Button>
           </DialogFooter>
         </DialogContent>
