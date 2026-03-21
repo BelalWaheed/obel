@@ -59,7 +59,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
             <Zap className="w-7 h-7" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">FocusFlow</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Obel</h1>
         </div>
 
         <Card className="p-6">

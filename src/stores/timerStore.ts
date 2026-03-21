@@ -258,7 +258,7 @@ export const useTimerStore = create<TimerState>()(
       },
     }),
     {
-      name: 'focusflow-timer',
+      name: 'obel-timer',
       partialize: (state) => ({
         settings: state.settings,
         sessionsCompleted: state.sessionsCompleted,

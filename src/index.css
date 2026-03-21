@@ -82,7 +82,7 @@
     --sidebar-border: oklch(0.90 0.015 280);
     --sidebar-ring: oklch(0.55 0.22 280);
 
-    /* FocusFlow custom tokens */
+    /* Obel custom tokens */
     --ff-success: oklch(0.65 0.18 160);
     --ff-warning: oklch(0.75 0.15 80);
     --ff-focus: oklch(0.55 0.22 280);

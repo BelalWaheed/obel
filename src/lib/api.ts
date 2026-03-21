@@ -1,4 +1,4 @@
-const BASE_URL = 'https://69beaab117c3d7d97792a813.mockapi.io/obel'
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://69beaab117c3d7d97792a813.mockapi.io/obel'
 
 export async function apiGet<T>(endpoint: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${endpoint}`)

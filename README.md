@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# Obel ⚡
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern productivity app for managing tasks, tracking focus sessions with a Pomodoro timer, and building better habits.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **User Auth** — Sign up / login with email & password (MockAPI)
+- **Task Management** — Create, edit, delete tasks with priority, tags, subtasks, and due dates
+- **Pomodoro Timer** — Focus sessions with customizable durations (15/20/25/30/40/45/60 min), short & long breaks
+- **Global Timer** — Timer keeps running across page navigation with mini indicator in sidebar
+- **Dashboard** — Personalized overview with stats, quick actions, and urgent task highlights
+- **Responsive** — Works on desktop & mobile (collapsible sidebar + hamburger menu)
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 19 + TypeScript |
+| Build | Vite |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| State | Zustand (persist middleware) |
+| Animation | Framer Motion |
+| Routing | React Router v6 |
+| API | MockAPI.io (REST) |
+| Icons | Lucide React |
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# Install dependencies
+npm install
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Create .env file
+cp .env.example .env
+# or set: VITE_API_URL=https://your-mockapi-url.mockapi.io/api
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Start dev server
+npm run dev
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/
+│   ├── layout/        # AppLayout, AuthGuard
+│   └── ui/            # shadcn/ui components
+├── lib/
+│   ├── api.ts         # API helpers (GET/POST/PUT/DELETE)
+│   └── utils.ts       # Utility functions
+├── pages/
+│   ├── LoginPage.tsx   # Auth (login/signup)
+│   ├── DashboardPage.tsx
+│   ├── TasksPage.tsx
+│   ├── PomodoroPage.tsx
+│   ├── HabitsPage.tsx  # Coming soon
+│   └── CalendarPage.tsx # Coming soon
+├── stores/
+│   ├── authStore.ts   # User auth state
+│   ├── taskStore.ts   # Task CRUD + API sync
+│   └── timerStore.ts  # Pomodoro timer + global tick
+├── App.tsx            # Routes
+├── main.tsx           # Entry point
+└── index.css          # Theme & design tokens
+```
+
+## Deployment
+
+Configured for **Vercel** with `vercel.json` for SPA routing. Push to your repo and connect to Vercel.
+
+## License
+
+MIT
