@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Calendar,
   Flag,
+  Flame,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ import { Progress } from '@/components/ui/progress'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useHabitStore } from '@/stores/habitStore'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -51,6 +53,7 @@ export default function DashboardPage() {
   const isRunning = useTimerStore((s) => s.isRunning)
   const sessionHistory = useTimerStore((s) => s.sessionHistory)
   const userName = useAuthStore((s) => s.user?.name || '')
+  const habits = useHabitStore((s) => s.habits)
 
   const tasksDueToday = useMemo(() => getTasksDueToday(), [tasks, getTasksDueToday])
   const completedToday = useMemo(() => getCompletedToday(), [tasks, getCompletedToday])
@@ -113,6 +116,7 @@ export default function DashboardPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Col 1: Quick Actions */}
         <motion.div variants={item} className="lg:col-span-1">
           <Card className="p-5 h-full">
             <h3 className="font-semibold text-lg mb-4">Quick Actions</h3>
@@ -130,7 +134,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-6">
               <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Overall Completion</span>
+                <span className="text-muted-foreground">Overall Task Completion</span>
                 <span className="font-medium">{completionRate}%</span>
               </div>
               <Progress value={completionRate} className="h-2" />
@@ -138,7 +142,8 @@ export default function DashboardPage() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item} className="lg:col-span-2">
+        {/* Col 2: Due Today */}
+        <motion.div variants={item} className="lg:col-span-1">
           <Card className="p-5 h-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">Due Today</h3>
@@ -157,9 +162,49 @@ export default function DashboardPage() {
                   <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" onClick={() => navigate('/tasks')}>
                     <div className={`w-2 h-2 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
                     <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
-                    <Badge variant="outline" className="text-xs shrink-0">{task.priority}</Badge>
                   </div>
                 ))}
+              </div>
+            )}
+          </Card>
+        </motion.div>
+
+        {/* Col 3: Habits Today */}
+        <motion.div variants={item} className="lg:col-span-1">
+          <Card className="p-5 h-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg">Daily Habits</h3>
+              <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/habits')}>
+                Track <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+            {habits.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Build your first daily habit to start fresh.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {habits.slice(0, 5).map((habit) => {
+                  let isDone = false
+                  try {
+                    const todayStr = dayjs().format('YYYY-MM-DD')
+                    isDone = JSON.parse(habit.completedDates || '[]').includes(todayStr)
+                  } catch (e) {}
+
+                  return (
+                    <div key={habit.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors cursor-pointer ${isDone ? 'bg-primary/5 border-primary/20' : 'bg-background hover:bg-muted'}`} onClick={() => navigate('/habits')}>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className={`w-4 h-4 ${isDone ? 'text-primary' : 'text-muted-foreground/30'}`} />
+                        <span className={`text-sm font-medium truncate ${isDone ? 'text-primary' : ''}`}>{habit.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Flame className={`w-3.5 h-3.5 ${habit.currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground/30'}`} />
+                        <span className={`text-xs font-bold ${habit.currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>{habit.currentStreak}</span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </Card>

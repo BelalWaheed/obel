@@ -14,15 +14,17 @@ export interface Subtask {
 export interface Task {
   id: string
   title: string
-  description: string
-  priority: Priority
+  description?: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
   tags: string[]
   subtasks: Subtask[]
-  status: TaskStatus
-  dueDate: string | null
+  status: 'todo' | 'in-progress' | 'done'
+  dueDate?: string
   createdAt: string
-  completedAt: string | null
+  completedAt?: string
   userId: string
+  focusSessions?: number
+  focusTime?: number
 }
 
 // Shape coming from API (tags/subtasks are JSON strings)
@@ -113,7 +115,7 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
       const payload = serializeTask({
         ...taskData,
         createdAt: new Date().toISOString(),
-        completedAt: null,
+        completedAt: undefined, // Changed from null to undefined
         userId,
       } as Task)
       const raw = await apiPost<ApiTask>('/tasks', payload)
@@ -148,9 +150,10 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
     const task = get().tasks.find((t) => t.id === id)
     if (!task) return
     const newStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done'
+    const isDone = newStatus === 'done'
     const updates: Partial<Task> = {
       status: newStatus,
-      completedAt: newStatus === 'done' ? new Date().toISOString() : null,
+      completedAt: isDone ? new Date().toISOString() : undefined,
     }
     await get().updateTask(id, updates)
   },

@@ -46,17 +46,17 @@ export default function PomodoroPage() {
   const sessionsCompleted = useTimerStore((s) => s.sessionsCompleted)
   const settings = useTimerStore((s) => s.settings)
   const sessionHistory = useTimerStore((s) => s.sessionHistory)
-  const linkedTaskId = useTimerStore((s) => s.linkedTaskId)
+  const activeTaskId = useTimerStore((s) => s.activeTaskId)
   const start = useTimerStore((s) => s.start)
   const pause = useTimerStore((s) => s.pause)
   const reset = useTimerStore((s) => s.reset)
   const skip = useTimerStore((s) => s.skip)
   const updateSettings = useTimerStore((s) => s.updateSettings)
-  const setLinkedTask = useTimerStore((s) => s.setLinkedTask)
+  const setActiveTaskId = useTimerStore((s) => s.setActiveTaskId)
 
   const tasks = useTaskStore((s) => s.tasks)
   const activeTasks = useMemo(() => tasks.filter((t) => t.status !== 'done'), [tasks])
-  const linkedTask = useMemo(() => tasks.find((t) => t.id === linkedTaskId), [tasks, linkedTaskId])
+  const activeTask = useMemo(() => tasks.find((t) => t.id === activeTaskId), [tasks, activeTaskId])
 
   const [showSettings, setShowSettings] = useState(false)
   const [localFocus, setLocalFocus] = useState(settings.focusDuration)
@@ -181,10 +181,10 @@ export default function PomodoroPage() {
               {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
             </div>
             <p className={`text-sm font-medium mt-2 ${config.color}`}>{config.label}</p>
-            {linkedTask && (
-              <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
-                <Link2 className="w-3 h-3" />
-                <span className="max-w-[180px] truncate">{linkedTask.title}</span>
+            {activeTask && (
+              <div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-background/50 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground max-w-[200px]">
+                <Link2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate font-medium">{activeTask.title}</span>
               </div>
             )}
           </div>
@@ -196,7 +196,7 @@ export default function PomodoroPage() {
         <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={reset} title="Reset">
           <RotateCcw className="w-5 h-5" />
         </Button>
-        <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={isRunning ? pause : start}>
+        <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={() => isRunning ? pause() : start()}>
           {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
         </Button>
         <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={skip} title="Skip">
@@ -209,15 +209,15 @@ export default function PomodoroPage() {
 
       {/* Link Task */}
       <div className="flex justify-center">
-        <Select value={linkedTaskId || 'none'} onValueChange={(v) => setLinkedTask(v === 'none' ? null : v)}>
-          <SelectTrigger className="w-[280px]">
+        <Select value={activeTaskId || 'none'} onValueChange={(v) => setActiveTaskId(v === 'none' ? null : v)}>
+          <SelectTrigger className="w-[280px] h-11 bg-card border-border/50 shadow-sm rounded-xl">
             <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-muted-foreground" />
-              <SelectValue placeholder="Link to a task..." />
+              <Link2 className="w-4 h-4 text-primary" />
+              <SelectValue placeholder="Select a task to focus on..." />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">No linked task</SelectItem>
+            <SelectItem value="none">No specific task</SelectItem>
             {activeTasks.map((task) => (
               <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
             ))}

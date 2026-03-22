@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { apiPut } from '@/lib/api'
 import { useAuthStore } from './authStore'
+import { useTaskStore } from './taskStore'
 
 export type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
 
-export interface TimerSettings {
+export interface PomodoroSettings {
   focusDuration: number
   shortBreakDuration: number
   longBreakDuration: number
@@ -13,12 +15,11 @@ export interface TimerSettings {
   autoStartFocus: boolean
 }
 
-export interface PomodoroSession {
-  id: string
+export interface SessionHistory {
+  id?: string
   mode: TimerMode
-  duration: number // seconds
-  completedAt: string
-  linkedTaskId: string | null
+  duration: number // in seconds
+  completedAt: string // ISO string
 }
 
 interface TimerState {
@@ -29,30 +30,31 @@ interface TimerState {
   sessionsCompleted: number
 
   // Settings
-  settings: TimerSettings
+  settings: PomodoroSettings
 
   // Session history
-  sessionHistory: PomodoroSession[]
-  linkedTaskId: string | null
+  sessionHistory: SessionHistory[]
+  activeTaskId: string | null
 
   // Actions
-  start: () => void
+  setMode: (mode: TimerMode) => void
+  start: (taskId?: string) => void
   pause: () => void
   reset: () => void
   skip: () => void
   tick: () => void
-  updateSettings: (s: Partial<TimerSettings>) => void
-  setLinkedTask: (id: string | null) => void
-  loadFromUser: () => void
-  saveToUser: () => void
+  updateSettings: (settings: Partial<PomodoroSettings>) => Promise<void>
+  setActiveTaskId: (taskId: string | null) => void
+  loadFromUser: () => Promise<void>
+  saveToUser: () => Promise<void>
 }
 
 // Global interval so timer runs even when not on Pomodoro page
-let globalInterval: ReturnType<typeof setInterval> | null = null
+let globalTimerInterval: ReturnType<typeof setInterval> | null = null
 
 function startGlobalTick() {
-  if (globalInterval) return
-  globalInterval = setInterval(() => {
+  if (globalTimerInterval) return
+  globalTimerInterval = setInterval(() => {
     const state = useTimerStore.getState()
     if (state.isRunning) {
       state.tick()
@@ -61,9 +63,9 @@ function startGlobalTick() {
 }
 
 function stopGlobalTick() {
-  if (globalInterval) {
-    clearInterval(globalInterval)
-    globalInterval = null
+  if (globalTimerInterval) {
+    clearInterval(globalTimerInterval)
+    globalTimerInterval = null
   }
 }
 
@@ -83,20 +85,12 @@ export const useTimerStore = create<TimerState>()(
         autoStartFocus: false,
       },
       sessionHistory: [],
-      linkedTaskId: null,
+      activeTaskId: null,
 
-      start: () => {
-        set({ isRunning: true })
-        startGlobalTick()
-      },
-
-      pause: () => {
-        set({ isRunning: false })
-      },
-
-      reset: () => {
-        const { mode, settings } = get()
+      setMode: (mode) => {
+        const { settings } = get()
         set({
+          mode,
           timeRemaining:
             mode === 'focus'
               ? settings.focusDuration * 60
@@ -105,6 +99,35 @@ export const useTimerStore = create<TimerState>()(
               : settings.longBreakDuration * 60,
           isRunning: false,
         })
+      },
+
+      start: (taskId) => {
+        if (get().isRunning) return
+        const currentMode = get().mode
+
+        set({ isRunning: true, activeTaskId: taskId !== undefined ? taskId : get().activeTaskId })
+
+        // Create a global interval if one doesn't exist
+        if (!globalTimerInterval) {
+          startGlobalTick()
+        }
+      },
+
+      pause: () => {
+        set({ isRunning: false })
+      },
+
+      reset: () => {
+        set((state) => ({
+          isRunning: false,
+          timeRemaining:
+            state.mode === 'focus'
+              ? state.settings.focusDuration * 60
+              : state.mode === 'shortBreak'
+              ? state.settings.shortBreakDuration * 60
+              : state.settings.longBreakDuration * 60,
+          activeTaskId: null,
+        }))
       },
 
       skip: () => {
@@ -125,26 +148,36 @@ export const useTimerStore = create<TimerState>()(
               ? settings.shortBreakDuration * 60
               : settings.longBreakDuration * 60,
           isRunning: false,
+          activeTaskId: null, // Clear active task on skip
         })
       },
 
       tick: () => {
-        const { timeRemaining, mode, settings, sessionsCompleted, linkedTaskId } = get()
+        const { timeRemaining, mode, settings, sessionsCompleted, activeTaskId } = get()
         if (timeRemaining <= 0) {
-          // Session complete
-          const totalDuration =
+          // Natural completion
+          stopGlobalTick()
+
+          const duration =
             mode === 'focus'
               ? settings.focusDuration * 60
               : mode === 'shortBreak'
               ? settings.shortBreakDuration * 60
               : settings.longBreakDuration * 60
 
-          const session: PomodoroSession = {
-            id: crypto.randomUUID(),
+          // If a focus session completed, update the task
+          if (mode === 'focus' && activeTaskId) {
+            useTaskStore.getState().updateTask(activeTaskId, {
+              // Need to get the latest task state first
+              focusSessions: (useTaskStore.getState().tasks.find((t) => t.id === activeTaskId)?.focusSessions || 0) + 1,
+              focusTime: (useTaskStore.getState().tasks.find((t) => t.id === activeTaskId)?.focusTime || 0) + duration,
+            })
+          }
+
+          const newHistoryItem: SessionHistory = {
             mode,
-            duration: totalDuration,
+            duration,
             completedAt: new Date().toISOString(),
-            linkedTaskId,
           }
 
           let nextMode: TimerMode
@@ -172,13 +205,16 @@ export const useTimerStore = create<TimerState>()(
                 : settings.longBreakDuration * 60,
             isRunning: shouldAutoStart,
             sessionsCompleted: newSessionsCompleted,
-            sessionHistory: [...get().sessionHistory, session],
+            sessionHistory: [...get().sessionHistory, newHistoryItem],
+            activeTaskId: nextMode === 'focus' ? activeTaskId : null, // Clear active task if not starting a new focus session
           })
 
           // Save to API after session complete
           get().saveToUser()
 
-          if (!shouldAutoStart) {
+          if (shouldAutoStart) {
+            startGlobalTick()
+          } else {
             stopGlobalTick()
           }
           return
@@ -187,7 +223,7 @@ export const useTimerStore = create<TimerState>()(
         set({ timeRemaining: timeRemaining - 1 })
       },
 
-      updateSettings: (newSettings) => {
+      updateSettings: async (newSettings) => {
         const { settings, mode, isRunning } = get()
         const merged = { ...settings, ...newSettings }
         const updates: Partial<TimerState> = { settings: merged }
@@ -203,20 +239,20 @@ export const useTimerStore = create<TimerState>()(
         }
 
         set(updates)
-        get().saveToUser()
+        await get().saveToUser()
       },
 
-      setLinkedTask: (id) => set({ linkedTaskId: id }),
+      setActiveTaskId: (taskId) => set({ activeTaskId: taskId }),
 
       // Load settings & session history from the user's API record
-      loadFromUser: () => {
+      loadFromUser: async () => {
         const user = useAuthStore.getState().user
         if (!user) return
         try {
-          const settings = JSON.parse(user.pomodoroSettings || '{}') as Partial<TimerSettings>
-          const history = JSON.parse(user.sessionHistory || '[]') as PomodoroSession[]
+          const settings = JSON.parse(user.pomodoroSettings || '{}') as Partial<PomodoroSettings>
+          const history = JSON.parse(user.sessionHistory || '[]') as SessionHistory[]
 
-          const merged: TimerSettings = {
+          const merged: PomodoroSettings = {
             focusDuration: settings.focusDuration ?? 25,
             shortBreakDuration: settings.shortBreakDuration ?? 5,
             longBreakDuration: settings.longBreakDuration ?? 15,
@@ -236,7 +272,7 @@ export const useTimerStore = create<TimerState>()(
       },
 
       // Persist settings + sessions to the user's API record
-      saveToUser: () => {
+      saveToUser: async () => {
         const { settings, sessionHistory } = get()
         const user = useAuthStore.getState().user
         if (!user) return
@@ -250,7 +286,7 @@ export const useTimerStore = create<TimerState>()(
         // Only keep last 100 sessions to avoid huge payload
         const recentHistory = sessionHistory.slice(-100)
 
-        useAuthStore.getState().updateUser({
+        await useAuthStore.getState().updateUser({
           pomodoroSettings: JSON.stringify(settings),
           sessionHistory: JSON.stringify(recentHistory),
           totalFocusHours,
@@ -265,6 +301,7 @@ export const useTimerStore = create<TimerState>()(
         sessionHistory: state.sessionHistory,
         timeRemaining: state.timeRemaining,
         mode: state.mode,
+        activeTaskId: state.activeTaskId,
       }),
     }
   )

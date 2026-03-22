@@ -5,15 +5,17 @@ import {
   Search,
   ListFilter,
   CheckCircle2,
-  Circle,
   Clock,
-  Tag,
+  TagIcon,
   Trash2,
   Edit3,
-  ChevronDown,
-  ChevronRight,
   X,
   Loader2,
+  Play,
+  Pause,
+  ListTodo,
+  Calendar,
+  Flame,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,40 +36,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Progress } from '@/components/ui/progress'
 import { useTaskStore, type Priority, type TaskStatus, type Task } from '@/stores/taskStore'
+import { useTimerStore } from '@/stores/timerStore'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
 
-const priorityConfig: Record<Priority, { label: string; color: string; icon: string }> = {
-  urgent: { label: 'Urgent', color: 'bg-red-500/15 text-red-600 border-red-500/30', icon: '🔴' },
-  high: { label: 'High', color: 'bg-orange-500/15 text-orange-600 border-orange-500/30', icon: '🟠' },
-  medium: { label: 'Medium', color: 'bg-yellow-500/15 text-yellow-700 border-yellow-500/30', icon: '🟡' },
-  low: { label: 'Low', color: 'bg-blue-500/15 text-blue-600 border-blue-500/30', icon: '🔵' },
-}
-
-const statusConfig: Record<TaskStatus, { label: string; icon: typeof Circle }> = {
-  todo: { label: 'To Do', icon: Circle },
-  'in-progress': { label: 'In Progress', icon: Clock },
-  done: { label: 'Done', icon: CheckCircle2 },
+const priorityColors: Record<Priority, string> = {
+  urgent: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-yellow-500',
+  low: 'bg-blue-500',
 }
 
 export default function TasksPage() {
-  const {
-    tasks,
-    isLoading,
-    getFilteredTasks,
-    getAllTags,
-    addTask,
-    updateTask,
-    deleteTask,
-    toggleComplete,
-    addSubtask,
-    toggleSubtask,
-    deleteSubtask,
-  } = useTaskStore()
+  const navigate = useNavigate()
+  const tasks = useTaskStore((state) => state.tasks)
+  const isLoading = useTaskStore((state) => state.isLoading)
+  const getFilteredTasks = useTaskStore((state) => state.getFilteredTasks)
+  const getAllTags = useTaskStore((state) => state.getAllTags)
+  const addTask = useTaskStore((state) => state.addTask)
+  const updateTask = useTaskStore((state) => state.updateTask)
+  const deleteTask = useTaskStore((state) => state.deleteTask)
+  const addSubtask = useTaskStore((state) => state.addSubtask)
+  const toggleSubtask = useTaskStore((state) => state.toggleSubtask)
+  const deleteSubtask = useTaskStore((state) => state.deleteSubtask)
+
+  const setActiveTaskId = useTimerStore((state) => state.setActiveTaskId)
 
   // Local filter state
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -76,7 +73,6 @@ export default function TasksPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
-  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   // Form state
@@ -86,7 +82,6 @@ export default function TasksPage() {
   const [formTags, setFormTags] = useState('')
   const [formDueDate, setFormDueDate] = useState('')
   const [formStatus, setFormStatus] = useState<TaskStatus>('todo')
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
   const filteredTasks = useMemo(
     () => getFilteredTasks(filterStatus, filterPriority, searchQuery),
@@ -108,12 +103,17 @@ export default function TasksPage() {
   const openEditModal = (task: Task) => {
     setEditingTask(task)
     setFormTitle(task.title)
-    setFormDescription(task.description)
+    setFormDescription(task.description || '')
     setFormPriority(task.priority)
     setFormTags(task.tags.join(', '))
     setFormDueDate(task.dueDate || '')
     setFormStatus(task.status)
     setIsModalOpen(true)
+  }
+
+  const handleStartFocus = (taskId: string) => {
+    setActiveTaskId(taskId)
+    navigate('/pomodoro')
   }
 
   const handleSave = async () => {
@@ -127,7 +127,7 @@ export default function TasksPage() {
         description: formDescription,
         priority: formPriority,
         tags,
-        dueDate: formDueDate || null,
+        dueDate: formDueDate || undefined,
         status: formStatus,
       })
     } else {
@@ -137,23 +137,12 @@ export default function TasksPage() {
         priority: formPriority,
         tags,
         subtasks: [],
-        dueDate: formDueDate || null,
+        dueDate: formDueDate || undefined,
         status: formStatus,
       })
     }
     setIsSaving(false)
     setIsModalOpen(false)
-  }
-
-  const handleAddSubtask = async (taskId: string) => {
-    if (!newSubtaskTitle.trim()) return
-    await addSubtask(taskId, newSubtaskTitle)
-    setNewSubtaskTitle('')
-  }
-
-  const getSubtaskProgress = (task: Task) => {
-    if (task.subtasks.length === 0) return 0
-    return Math.round((task.subtasks.filter((s) => s.completed).length / task.subtasks.length) * 100)
   }
 
   return (
@@ -203,7 +192,7 @@ export default function TasksPage() {
           </div>
           {allTags.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+              <TagIcon className="w-3.5 h-3.5 text-muted-foreground" />
               {allTags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setSearchQuery(tag)}>
                   {tag}
@@ -223,98 +212,223 @@ export default function TasksPage() {
       )}
 
       {/* Task List */}
-      <div className="space-y-2">
+      <div className="lg:col-span-3 space-y-4">
         <AnimatePresence mode="popLayout">
           {!isLoading && filteredTasks.length === 0 ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <ListFilter className="w-8 h-8 text-primary" />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-20 bg-card rounded-xl border border-border/50"
+            >
+              <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold">No tasks found</h3>
-              <p className="text-muted-foreground mt-1">
-                {searchQuery || filterStatus !== 'all' || filterPriority !== 'all'
-                  ? 'Try adjusting your filters.'
-                  : 'Create your first task to get started!'}
-              </p>
+              <p className="text-muted-foreground mt-1">Try adjusting your filters or create a new task.</p>
             </motion.div>
           ) : (
-            filteredTasks.map((task, i) => {
-              const StatusIcon = statusConfig[task.status].icon
-              const isExpanded = expandedTaskId === task.id
-              const subtaskProgress = getSubtaskProgress(task)
+            filteredTasks.map((task) => {
+              const isDone = task.status === 'done'
+              const completedSubtasks = task.subtasks.filter((st) => st.completed).length
+              const totalSubtasks = task.subtasks.length
+              
+              // Formatted focus time
+              const focusMinutes = Math.floor((task.focusTime || 0) / 60)
+              const hours = Math.floor(focusMinutes / 60)
+              const mins = focusMinutes % 60
+              const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
 
               return (
-                <motion.div key={task.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} transition={{ delay: i * 0.03 }}>
-                  <Card className={`p-4 transition-all duration-200 hover:shadow-md cursor-pointer group ${task.status === 'done' ? 'opacity-60' : ''}`}>
-                    <div className="flex items-start gap-3">
-                      <button onClick={(e) => { e.stopPropagation(); toggleComplete(task.id) }} className="mt-0.5 shrink-0" title={task.status === 'done' ? 'Mark as todo' : 'Mark as done'}>
-                        <StatusIcon className={`w-5 h-5 transition-colors ${task.status === 'done' ? 'text-green-500' : task.status === 'in-progress' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`} />
-                      </button>
-
-                      <div className="flex-1 min-w-0" onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`font-medium ${task.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>{task.title}</span>
-                          <Badge variant="outline" className={`text-xs ${priorityConfig[task.priority].color}`}>
-                            {priorityConfig[task.priority].icon} {priorityConfig[task.priority].label}
-                          </Badge>
-                        </div>
-                        {task.description && <p className="text-sm text-muted-foreground line-clamp-1">{task.description}</p>}
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          {task.tags.map((tag) => (<Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>))}
-                          {task.subtasks.length > 0 && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <div className="w-16"><Progress value={subtaskProgress} className="h-1.5" /></div>
-                              <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}</span>
-                            </div>
-                          )}
-                          {task.dueDate && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" />{dayjs(task.dueDate).fromNow()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={(e) => { e.stopPropagation(); openEditModal(task) }}>
-                          <Edit3 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete" onClick={(e) => { e.stopPropagation(); deleteTask(task.id) }}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <button onClick={(e) => { e.stopPropagation(); setExpandedTaskId(isExpanded ? null : task.id) }} className="p-1">
-                          {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                <motion.div
+                  key={task.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                >
+                  <Card
+                    className={`relative overflow-hidden group transition-all duration-300 hover:shadow-md ${
+                      isDone ? 'opacity-60 bg-muted/30 border-muted' : 'bg-card hover:border-primary/30'
+                    }`}
+                  >
+                    {/* Priority left indicator line */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${priorityColors[task.priority]} transition-opacity ${isDone ? 'opacity-30' : 'opacity-100'}`} />
+                    
+                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4">
+                      {/* Checkbox */}
+                      <div className="pt-1 shrink-0">
+                        <button
+                          onClick={() => updateTask(task.id, { status: isDone ? 'todo' : 'done' })}
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isDone ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30 hover:border-primary/50 text-transparent hover:text-primary/30'
+                          }`}
+                        >
+                          <CheckCircle2 className={`w-4 h-4 ${isDone ? 'opacity-100' : 'opacity-0'} transition-opacity`} />
                         </button>
                       </div>
-                    </div>
 
-                    {/* Expanded Subtasks */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                          <div className="mt-4 pt-4 border-t border-border space-y-2">
-                            {task.description && <p className="text-sm text-muted-foreground mb-3">{task.description}</p>}
-                            <h4 className="text-sm font-medium flex items-center gap-2">
-                              Subtasks
-                              {task.subtasks.length > 0 && <span className="text-xs text-muted-foreground">({task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})</span>}
-                            </h4>
-                            {task.subtasks.map((subtask) => (
-                              <div key={subtask.id} className="flex items-center gap-2 group/subtask">
-                                <Checkbox checked={subtask.completed} onCheckedChange={() => toggleSubtask(task.id, subtask.id)} />
-                                <span className={`text-sm flex-1 ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}>{subtask.title}</span>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/subtask:opacity-100 transition-opacity" onClick={() => deleteSubtask(task.id, subtask.id)}>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                          <div>
+                            <h3 className={`font-semibold text-lg transition-colors ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                              {task.title}
+                            </h3>
+                            {task.description && (
+                              <p className={`text-sm mt-1 line-clamp-2 ${isDone ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
+                                {task.description}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Badges row top right */}
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <Badge variant="outline" className={`capitalize ${isDone ? 'border-muted-foreground/20 text-muted-foreground/50' : ''}`}>
+                              {task.priority}
+                            </Badge>
+                            {task.status === 'in-progress' && !isDone && (
+                              <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20">Active</Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Meta stats row */}
+                        <div className="flex flex-wrap items-center gap-3 mt-4">
+                          {/* Tags */}
+                          {task.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className={`text-xs ${isDone ? 'opacity-50' : 'bg-muted hover:bg-muted/80'}`}>
+                              <TagIcon className="w-3 h-3 mr-1" />
+                              {tag}
+                            </Badge>
+                          ))}
+                          
+                          {/* Subtasks */}
+                          {totalSubtasks > 0 && (
+                            <div className={`flex items-center text-xs px-2 py-1 rounded-md bg-muted/50 ${
+                              completedSubtasks === totalSubtasks ? 'text-emerald-500 bg-emerald-500/10' : 'text-muted-foreground'
+                            }`}>
+                              <ListTodo className="w-3.5 h-3.5 mr-1" />
+                              {completedSubtasks}/{totalSubtasks}
+                            </div>
+                          )}
+
+                          {/* Due Date */}
+                          {task.dueDate && (
+                            <div className={`flex items-center text-xs px-2 py-1 rounded-md ${
+                              dayjs(task.dueDate).isBefore(dayjs(), 'day') && !isDone
+                                ? 'text-red-500 bg-red-500/10 font-medium'
+                                : 'text-muted-foreground bg-muted/50'
+                            }`}>
+                              <Calendar className="w-3.5 h-3.5 mr-1" />
+                              {dayjs(task.dueDate).format('MMM D')}
+                            </div>
+                          )}
+
+                          {/* Pomodoro Tracking Stats */}
+                          {(task.focusSessions || 0) > 0 && (
+                            <div className={`flex items-center gap-2 text-xs font-medium px-2 py-1 rounded-md transition-colors ${
+                              isDone ? 'bg-muted text-muted-foreground opacity-70' : 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                            }`}>
+                              <div className="flex items-center gap-1">
+                                <Flame className="w-3.5 h-3.5" />
+                                <span>{task.focusSessions} {task.focusSessions === 1 ? 'session' : 'sessions'}</span>
+                              </div>
+                              <span className="opacity-50">•</span>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>{timeStr}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Subtasks List & Add New */}
+                        {!isDone && (
+                          <div className="mt-4 pl-3 border-l-2 border-muted space-y-2">
+                            {task.subtasks.map((st) => (
+                              <div key={st.id} className="flex items-center gap-2 group/st">
+                                <Checkbox
+                                  checked={st.completed}
+                                  onCheckedChange={() => toggleSubtask(task.id, st.id)}
+                                  className="w-4 h-4 border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                />
+                                <span className={`text-sm transition-colors flex-1 ${st.completed ? 'line-through text-muted-foreground opacity-70' : 'text-foreground'}`}>
+                                  {st.title}
+                                </span>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/st:opacity-100 text-muted-foreground hover:text-destructive transition-all" onClick={() => deleteSubtask(task.id, st.id)}>
                                   <X className="w-3 h-3" />
                                 </Button>
                               </div>
                             ))}
-                            <div className="flex items-center gap-2 mt-2">
-                              <Input placeholder="Add subtask..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(task.id) }} className="h-8 text-sm" />
-                              <Button variant="outline" size="sm" onClick={() => handleAddSubtask(task.id)}><Plus className="w-3 h-3" /></Button>
+                            {/* Quick Add Subtask */}
+                            <div className="flex items-center gap-2 mt-2 pt-1">
+                              <Input
+                                placeholder="Add subtask..."
+                                className="h-7 text-xs bg-transparent border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/50 placeholder:text-muted-foreground/50 px-0"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const val = (e.target as HTMLInputElement).value
+                                    if (val.trim()) {
+                                      addSubtask(task.id, val)
+                                      ;(e.target as HTMLInputElement).value = ''
+                                    }
+                                  }
+                                }}
+                              />
                             </div>
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        )}
+                      </div>
+
+                      {/* Actions Right Side */}
+                      <div className="flex flex-col items-end gap-2 shrink-0 pt-2 sm:pt-0">
+                        {/* Focus Button */}
+                        {!isDone && (
+                          <Button
+                            onClick={() => handleStartFocus(task.id)}
+                            className="w-full sm:w-auto gap-2 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md shadow-orange-500/20"
+                          >
+                            <Play className="w-4 h-4 fill-white" />
+                            Focus
+                          </Button>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={`h-10 w-10 transition-colors ${isDone ? 'opacity-0 pointer-events-none' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}`}
+                            onClick={() => {
+                              updateTask(task.id, {
+                                status: task.status === 'in-progress' ? 'todo' : 'in-progress',
+                              })
+                            }}
+                          >
+                            {task.status === 'in-progress' ? <Pause className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                            onClick={() => openEditModal(task)}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                            onClick={() => deleteTask(task.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </Card>
                 </motion.div>
               )

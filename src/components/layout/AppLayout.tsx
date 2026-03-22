@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -12,13 +12,12 @@ import {
   Zap,
   LogOut,
   User,
-  Menu,
-  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
+import { useHabitStore } from '@/stores/habitStore'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,14 +29,13 @@ const navItems = [
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
-  const location = useLocation()
 
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const fetchTasks = useTaskStore((s) => s.fetchTasks)
   const loadFromUser = useTimerStore((s) => s.loadFromUser)
+  const fetchHabits = useHabitStore((s) => s.fetchHabits)
 
   const isTimerRunning = useTimerStore((s) => s.isRunning)
   const timerRemaining = useTimerStore((s) => s.timeRemaining)
@@ -60,12 +58,8 @@ export default function AppLayout() {
   useEffect(() => {
     fetchTasks()
     loadFromUser()
-  }, [fetchTasks, loadFromUser])
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileOpen(false)
-  }, [location.pathname])
+    fetchHabits()
+  }, [fetchTasks, loadFromUser, fetchHabits])
 
   const handleLogout = () => {
     logout()
@@ -80,7 +74,7 @@ export default function AppLayout() {
           <Zap className="w-5 h-5" />
         </div>
         <AnimatePresence>
-          {(!collapsed || mobileOpen) && (
+          {!collapsed && (
             <motion.span
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -91,14 +85,6 @@ export default function AppLayout() {
             </motion.span>
           )}
         </AnimatePresence>
-
-        {/* Close button on mobile */}
-        <button
-          className="ml-auto md:hidden p-1.5 rounded-lg hover:bg-accent"
-          onClick={() => setMobileOpen(false)}
-        >
-          <X className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Mini timer indicator */}
@@ -132,7 +118,7 @@ export default function AppLayout() {
           <NavLink
             key={item.path}
             to={item.path}
-            title={collapsed && !mobileOpen ? item.label : undefined}
+            title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
@@ -143,7 +129,7 @@ export default function AppLayout() {
           >
             <item.icon className="w-5 h-5 shrink-0" />
             <AnimatePresence>
-              {(!collapsed || mobileOpen) && (
+              {!collapsed && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
@@ -160,8 +146,8 @@ export default function AppLayout() {
 
       {/* User section */}
       <div className="border-t border-border p-2 space-y-1 shrink-0">
-        {user && (!collapsed || mobileOpen) && (
-          <div className="flex items-center gap-2 px-3 py-2">
+        {user && !collapsed && (
+          <NavLink to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-accent transition-colors">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <User className="w-4 h-4 text-primary" />
             </div>
@@ -169,7 +155,7 @@ export default function AppLayout() {
               <p className="text-sm font-medium truncate">{user.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
-          </div>
+          </NavLink>
         )}
 
         <Button
@@ -177,11 +163,11 @@ export default function AppLayout() {
           size="sm"
           onClick={handleLogout}
           className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
-          title={collapsed && !mobileOpen ? 'Logout' : undefined}
+          title={collapsed ? 'Logout' : undefined}
         >
           <LogOut className="w-4 h-4 shrink-0" />
           <AnimatePresence>
-            {(!collapsed || mobileOpen) && (
+            {!collapsed && (
               <motion.span
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: 'auto' }}
@@ -209,19 +195,6 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Mobile overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Desktop sidebar — always visible on md+ */}
       <motion.aside
         animate={{ width: collapsed ? 72 : 240 }}
@@ -231,31 +204,10 @@ export default function AppLayout() {
         {sidebarContent}
       </motion.aside>
 
-      {/* Mobile sidebar — slides in from left */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed top-0 left-0 bottom-0 z-50 w-[280px] flex flex-col border-r border-border bg-sidebar md:hidden"
-          >
-            {sidebarContent}
-          </motion.aside>
-        )}
-      </AnimatePresence>
-
       {/* Main Content */}
-      <main className="flex-1 overflow-auto flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0 relative h-full">
         {/* Mobile top bar */}
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 md:hidden">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 -ml-2 rounded-lg hover:bg-accent"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 md:hidden bg-background/80 backdrop-blur-sm sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary text-primary-foreground">
               <Zap className="w-4 h-4" />
@@ -283,6 +235,28 @@ export default function AppLayout() {
         <div className="flex-1 overflow-auto p-4 sm:p-6 max-w-6xl mx-auto w-full">
           <Outlet />
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/90 backdrop-blur-md border-t border-border z-50 flex items-center justify-around px-2 pb-safe">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center w-full h-full gap-1 pt-1 ${
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon className={`w-5 h-5 ${isActive ? 'fill-primary/20' : ''}`} />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
       </main>
     </div>
   )

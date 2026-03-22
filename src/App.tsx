@@ -7,6 +7,7 @@ import TasksPage from '@/pages/TasksPage'
 import PomodoroPage from '@/pages/PomodoroPage'
 import HabitsPage from '@/pages/HabitsPage'
 import CalendarPage from '@/pages/CalendarPage'
+import ProfilePage from '@/pages/ProfilePage'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/pomodoro" element={<PomodoroPage />} />
             <Route path="/habits" element={<HabitsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
       </Routes>
