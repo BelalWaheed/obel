@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiPut } from '@/lib/api'
 import { useAuthStore } from './authStore'
 import { useTaskStore } from './taskStore'
 
@@ -103,7 +102,6 @@ export const useTimerStore = create<TimerState>()(
 
       start: (taskId) => {
         if (get().isRunning) return
-        const currentMode = get().mode
 
         set({ isRunning: true, activeTaskId: taskId !== undefined ? taskId : get().activeTaskId })
 

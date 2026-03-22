@@ -53,8 +53,8 @@ function parseApiTask(raw: ApiTask): Task {
     status: (raw.status || 'todo') as TaskStatus,
     tags,
     subtasks,
-    dueDate: raw.dueDate || null,
-    completedAt: raw.completedAt || null,
+    dueDate: raw.dueDate || undefined,
+    completedAt: raw.completedAt || undefined,
   }
 }
 
@@ -192,7 +192,7 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
-        (t) => t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+        (t) => t.title.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q)
       )
     }
     return filtered
