@@ -166,7 +166,20 @@ export default function HabitsPage() {
                       
                       {/* Check button (Giant Circle) */}
                       <button
-                        onClick={(e) => { e.stopPropagation(); toggleHabitCompletion(habit.id, todayStr) }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (!completed) {
+                            import('canvas-confetti').then((confetti) => {
+                              confetti.default({
+                                particleCount: 150,
+                                spread: 80,
+                                origin: { y: 0.6 },
+                                colors: ['#f97316', '#eab308', '#22c55e'] // Fire/Gold/Green
+                              })
+                            })
+                          }
+                          toggleHabitCompletion(habit.id, todayStr) 
+                        }}
                         className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center border-[2.5px] transition-all duration-300 ${
                           completed 
                             ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-lg shadow-primary/30' 

@@ -291,7 +291,20 @@ export default function TasksPage() {
                     
                     <div className="p-4 flex items-center gap-4 relative z-10">
                       <button
-                        onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: isDone ? 'todo' : 'done' }) }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (!isDone) {
+                            import('canvas-confetti').then((confetti) => {
+                              confetti.default({
+                                particleCount: 100,
+                                spread: 70,
+                                origin: { y: 0.6 },
+                                colors: ['#a855f7', '#ec4899', '#3b82f6']
+                              })
+                            })
+                          }
+                          updateTask(task.id, { status: isDone ? 'todo' : 'done' }) 
+                        }}
                         className={`w-7 h-7 shrink-0 rounded-full border-[2.5px] flex items-center justify-center transition-all duration-300 ${
                           isDone 
                             ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-md shadow-primary/30' 

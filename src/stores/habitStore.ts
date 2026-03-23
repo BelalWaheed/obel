@@ -169,6 +169,34 @@ export const useHabitStore = create<HabitState>((set, get) => ({
       habits: state.habits.map((h) => (h.id === id ? { ...h, ...updates } : h)),
     }))
 
+    // Check for theme unlocks
+    if (isCompleted === false) { 
+      // i.e., we just checked it IN
+      const { user, updateUser } = useAuthStore.getState()
+      if (user) {
+        let unlocked = user.unlockedThemes ? JSON.parse(user.unlockedThemes) : []
+        let newUnlocked = false
+
+        if (currentStreak === 3 && !unlocked.includes('cyberpunk')) {
+          unlocked.push('cyberpunk')
+          newUnlocked = true
+        }
+        if (currentStreak === 7 && !unlocked.includes('forest')) {
+          unlocked.push('forest')
+          newUnlocked = true
+        }
+        if (currentStreak === 14 && !unlocked.includes('sunset')) {
+          unlocked.push('sunset')
+          newUnlocked = true
+        }
+
+        if (newUnlocked) {
+          updateUser({ unlockedThemes: JSON.stringify(unlocked) })
+          // Optionally trigger confetti here too, but handled in component
+        }
+      }
+    }
+
     // API update
     await get().updateHabit(id, updates)
   },

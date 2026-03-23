@@ -22,6 +22,8 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useHabitStore } from '@/stores/habitStore'
+import { ProductivityCoach } from '@/components/dashboard/ProductivityCoach'
+import { SquadWidget } from '@/components/dashboard/SquadWidget'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -113,6 +115,10 @@ export default function DashboardPage() {
             </Card>
           )
         })}
+      </motion.div>
+
+      <motion.div variants={item}>
+        <ProductivityCoach />
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -211,26 +217,32 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {urgentTasks.length > 0 && (
-        <motion.div variants={item}>
-          <Card className="p-5 border-orange-500/30 bg-orange-500/5">
-            <div className="flex items-center gap-2 mb-4">
-              <Flag className="w-5 h-5 text-orange-500" />
-              <h3 className="font-semibold text-lg">Needs Attention</h3>
-              <Badge variant="secondary" className="ml-1">{urgentTasks.length}</Badge>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {urgentTasks.slice(0, 4).map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:shadow-sm transition-shadow cursor-pointer" onClick={() => navigate('/tasks')}>
-                  <div className={`w-2.5 h-2.5 rounded-full ${priorityColors[task.priority]}`} />
-                  <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
-                  {task.dueDate && <span className="text-xs text-muted-foreground">{dayjs(task.dueDate).fromNow()}</span>}
-                </div>
-              ))}
-            </div>
-          </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {urgentTasks.length > 0 && (
+          <motion.div variants={item} className="lg:col-span-2">
+            <Card className="p-5 border-orange-500/30 bg-orange-500/5 h-full">
+              <div className="flex items-center gap-2 mb-4">
+                <Flag className="w-5 h-5 text-orange-500" />
+                <h3 className="font-semibold text-lg">Needs Attention</h3>
+                <Badge variant="secondary" className="ml-1">{urgentTasks.length}</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {urgentTasks.slice(0, 4).map((task) => (
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:shadow-sm transition-shadow cursor-pointer" onClick={() => navigate('/tasks')}>
+                    <div className={`w-2.5 h-2.5 rounded-full ${priorityColors[task.priority]}`} />
+                    <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
+                    {task.dueDate && <span className="text-xs text-muted-foreground">{dayjs(task.dueDate).fromNow()}</span>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        <motion.div variants={item} className={urgentTasks.length > 0 ? "lg:col-span-1" : "lg:col-span-3"}>
+          <SquadWidget />
         </motion.div>
-      )}
+      </div>
     </motion.div>
   )
 }

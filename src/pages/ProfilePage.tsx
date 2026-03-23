@@ -9,6 +9,7 @@ import {
   Flame,
   TrendingUp,
   Activity,
+  Sparkles,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -293,6 +294,59 @@ export default function ProfilePage() {
         </motion.div>
 
       </div>
+
+      {/* 4. Appearance & Themes */}
+      <motion.div variants={item} className="mt-8">
+        <h3 className="font-semibold text-xl mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          Appearance & Themes
+        </h3>
+        <Card className="p-6">
+          <p className="text-sm text-muted-foreground mb-6">
+            Unlock premium themes by maintaining long habit streaks!
+            <br/> • 3 Days = Cyberpunk
+            <br/> • 7 Days = Forest
+            <br/> • 14 Days = Sunset
+          </p>
+          
+          <div className="flex flex-wrap gap-4">
+            {['default', 'cyberpunk', 'forest', 'sunset'].map((themeName) => {
+              const unlockedThemes = user.unlockedThemes ? JSON.parse(user.unlockedThemes) : []
+              const isDefault = themeName === 'default'
+              const isUnlocked = isDefault || unlockedThemes.includes(themeName)
+              const isActive = (user.activeTheme || 'default') === themeName
+              
+              const themeColors = {
+                default: 'bg-zinc-800 border-zinc-700',
+                cyberpunk: 'bg-[#09090b] border-[#fcd34d]',
+                forest: 'bg-[#0f172a] border-[#10b981]',
+                sunset: 'bg-[#2a1625] border-[#fb7185]'
+              }
+              const bgClass = themeColors[themeName as keyof typeof themeColors]
+
+              return (
+                <button
+                  key={themeName}
+                  disabled={!isUnlocked}
+                  onClick={() => useAuthStore.getState().updateUser({ activeTheme: themeName })}
+                  className={`
+                    relative w-24 h-24 rounded-2xl flex flex-col items-center justify-center gap-2
+                    transition-all duration-300 border-2 
+                    ${isUnlocked ? 'cursor-pointer hover:scale-105' : 'opacity-40 cursor-not-allowed grayscale'}
+                    ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
+                    ${bgClass}
+                  `}
+                >
+                  <div className="capitalize font-bold text-white text-xs z-10">{themeName}</div>
+                  {!isUnlocked && <span className="text-[9px] text-white/70 absolute bottom-2">Locked</span>}
+                  {isActive && <CheckCircle2 className="w-4 h-4 text-white absolute top-2 right-2" />}
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+      </motion.div>
+
     </motion.div>
   )
 }

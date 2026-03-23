@@ -12,18 +12,21 @@ import {
   Zap,
   LogOut,
   User,
+  Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useHabitStore } from '@/stores/habitStore'
+import { CommandPalette } from '@/components/CommandPalette'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/pomodoro', icon: Timer, label: 'Pomodoro' },
   { path: '/habits', icon: Sparkles, label: 'Habits' },
+  { path: '/planner', icon: Clock, label: 'Planner' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
 ]
 
@@ -54,6 +57,16 @@ export default function AppLayout() {
     }
     return () => { document.title = 'Obel' }
   }, [isTimerRunning, timerDisplay, timerMode])
+
+  const activeTheme = useAuthStore((s) => s.user?.activeTheme) || 'default'
+
+  useEffect(() => {
+    // Remove all theme classes first
+    document.documentElement.classList.remove('theme-cyberpunk', 'theme-forest', 'theme-sunset')
+    if (activeTheme !== 'default') {
+      document.documentElement.classList.add(`theme-${activeTheme}`)
+    }
+  }, [activeTheme])
 
   useEffect(() => {
     fetchTasks()
@@ -258,6 +271,8 @@ export default function AppLayout() {
           ))}
         </nav>
       </main>
+
+      <CommandPalette />
     </div>
   )
 }

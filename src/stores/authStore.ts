@@ -12,6 +12,9 @@ export interface UserProfile {
   sessionHistory: string
   totalFocusHours: string
   createdAt: string
+  unlockedThemes?: string
+  activeTheme?: string
+  partnerId?: string
 }
 
 interface AuthState {

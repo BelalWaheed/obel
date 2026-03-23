@@ -25,6 +25,8 @@ export interface Task {
   userId: string
   focusSessions?: number
   focusTime?: number
+  scheduledTime?: string // e.g. "09:00"
+  estimatedDuration?: number // in minutes
 }
 
 // Shape coming from API (tags/subtasks are JSON strings)
@@ -40,6 +42,8 @@ interface ApiTask {
   createdAt: string
   completedAt: string
   userId: string
+  scheduledTime?: string
+  estimatedDuration?: number
 }
 
 function parseApiTask(raw: ApiTask): Task {
@@ -55,6 +59,8 @@ function parseApiTask(raw: ApiTask): Task {
     subtasks,
     dueDate: raw.dueDate || undefined,
     completedAt: raw.completedAt || undefined,
+    scheduledTime: raw.scheduledTime || undefined,
+    estimatedDuration: raw.estimatedDuration || undefined,
   }
 }
 
@@ -64,6 +70,8 @@ function serializeTask(task: Partial<Task>) {
   if (task.subtasks !== undefined) data.subtasks = JSON.stringify(task.subtasks)
   if (task.dueDate === null) data.dueDate = ''
   if (task.completedAt === null) data.completedAt = ''
+  if (task.scheduledTime === null) data.scheduledTime = ''
+  if (task.estimatedDuration === null) data.estimatedDuration = 0
   return data
 }
 
