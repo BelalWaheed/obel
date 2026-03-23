@@ -13,6 +13,7 @@ import {
   LogOut,
   User,
   Clock,
+  WifiOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
@@ -32,7 +33,27 @@ const navItems = [
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false)
+      // Allow BackgroundSync queues to flush before fetching the real state
+      setTimeout(() => {
+        useTaskStore.getState().fetchTasks()
+        useHabitStore.getState().fetchHabits()
+      }, 3000)
+    }
+    const handleOffline = () => setIsOffline(true)
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -88,14 +109,21 @@ export default function AppLayout() {
         </div>
         <AnimatePresence>
           {!collapsed && (
-            <motion.span
+            <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
-              className="font-bold text-lg tracking-tight text-foreground whitespace-nowrap"
+              className="flex items-center gap-2"
             >
-              Obel
-            </motion.span>
+              <span className="font-bold text-lg tracking-tight text-foreground whitespace-nowrap">
+                Obel
+              </span>
+              {isOffline && (
+                <span className="flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">
+                  <WifiOff className="w-3 h-3" /> Offline
+                </span>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -226,6 +254,11 @@ export default function AppLayout() {
               <Zap className="w-4 h-4" />
             </div>
             <span className="font-bold text-base">Obel</span>
+            {isOffline && (
+              <span className="flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full ml-1">
+                <WifiOff className="w-3 h-3" />
+              </span>
+            )}
           </div>
 
           {/* Mini timer on mobile top bar */}

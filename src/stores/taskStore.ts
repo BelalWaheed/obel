@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api'
 import { useAuthStore } from './authStore'
 
@@ -98,7 +99,9 @@ interface TaskState {
   getCompletedToday: () => Task[]
 }
 
-export const useTaskStore = create<TaskState>()((set, get) => ({
+export const useTaskStore = create<TaskState>()(
+  persist(
+    (set, get) => ({
   tasks: [],
   isLoading: false,
   error: null,
@@ -119,38 +122,52 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
   addTask: async (taskData) => {
     const userId = useAuthStore.getState().user?.id
     if (!userId) return
+    
+    // Optimistic UI update
+    const tempId = `temp-${crypto.randomUUID()}`
+    const tempTask: Task = {
+      ...taskData,
+      id: tempId,
+      createdAt: new Date().toISOString(),
+      subtasks: [],
+      tags: taskData.tags || [],
+      status: 'todo',
+      priority: taskData.priority || 'medium',
+      userId,
+    } as Task
+    set((s) => ({ tasks: [...s.tasks, tempTask] }))
+
     try {
-      const payload = serializeTask({
-        ...taskData,
-        createdAt: new Date().toISOString(),
-        completedAt: undefined, // Changed from null to undefined
-        userId,
-      } as Task)
+      const payload = serializeTask(tempTask)
       const raw = await apiPost<ApiTask>('/tasks', payload)
       const task = parseApiTask(raw)
-      set((s) => ({ tasks: [...s.tasks, task] }))
+      // Replace temp ID with real ID
+      set((s) => ({ tasks: s.tasks.map(t => t.id === tempId ? task : t) }))
     } catch {
-      set({ error: 'Failed to create task' })
+      console.warn('Network error: addTask queued for background sync')
     }
   },
 
   updateTask: async (id, updates) => {
+    // Optimistic UI update
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)) }))
     try {
       const payload = serializeTask(updates)
       const raw = await apiPut<ApiTask>(`/tasks/${id}`, payload)
       const updated = parseApiTask(raw)
       set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? updated : t)) }))
     } catch {
-      set({ error: 'Failed to update task' })
+      console.warn('Network error: updateTask queued for background sync')
     }
   },
 
   deleteTask: async (id) => {
+    // Optimistic UI update
+    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
     try {
       await apiDelete(`/tasks/${id}`)
-      set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
     } catch {
-      set({ error: 'Failed to delete task' })
+      console.warn('Network error: deleteTask queued for background sync')
     }
   },
 
@@ -221,4 +238,10 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
     const today = new Date().toISOString().split('T')[0]
     return get().tasks.filter((t) => t.completedAt?.startsWith(today))
   },
-}))
+}),
+  {
+    name: 'obel-tasks',
+    partialize: (state) => ({ tasks: state.tasks }),
+  }
+)
+)

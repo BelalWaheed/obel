@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api'
 import { useAuthStore } from './authStore'
 import dayjs from 'dayjs'
@@ -74,7 +75,9 @@ function calculateStreaks(dates: string[]): { currentStreak: number; longestStre
   return { currentStreak, longestStreak }
 }
 
-export const useHabitStore = create<HabitState>((set, get) => ({
+export const useHabitStore = create<HabitState>()(
+  persist(
+    (set, get) => ({
   habits: [],
   isLoading: false,
   error: null,
@@ -96,40 +99,50 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     const userId = useAuthStore.getState().user?.id
     if (!userId) return
 
-    const newHabit = {
+    const tempId = `temp-${crypto.randomUUID()}`
+    const newHabit: Habit = {
       ...habitData,
+      id: tempId,
       userId,
       completedDates: JSON.stringify([]),
       currentStreak: 0,
       longestStreak: 0,
       createdAt: new Date().toISOString(),
-    }
+    } as Habit
+
+    // Optimistic UI Update
+    set((state) => ({ habits: [...state.habits, newHabit] }))
 
     try {
       const added = await apiPost<Habit>('/habits', newHabit)
-      set((state) => ({ habits: [...state.habits, added] }))
+      set((state) => ({ habits: state.habits.map(h => h.id === tempId ? added : h) }))
     } catch (err: any) {
-      console.error('Failed to add habit', err)
+      console.warn('Network error: addHabit queued for background sync')
     }
   },
 
   updateHabit: async (id, updates) => {
+    // Optimistic UI Update
+    set((state) => ({
+      habits: state.habits.map((h) => (h.id === id ? { ...h, ...updates } : h)),
+    }))
     try {
       const updated = await apiPut<Habit>(`/habits/${id}`, updates)
       set((state) => ({
         habits: state.habits.map((h) => (h.id === id ? updated : h)),
       }))
     } catch (err: any) {
-      console.error('Failed to update habit', err)
+      console.warn('Network error: updateHabit queued for background sync')
     }
   },
 
   deleteHabit: async (id) => {
+    // Optimistic UI Update
+    set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }))
     try {
       await apiDelete(`/habits/${id}`)
-      set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }))
     } catch (err: any) {
-      console.error('Failed to delete habit', err)
+      console.warn('Network error: deleteHabit queued for background sync')
     }
   },
 
@@ -200,4 +213,10 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     // API update
     await get().updateHabit(id, updates)
   },
-}))
+}),
+  {
+    name: 'obel-habits',
+    partialize: (state) => ({ habits: state.habits }),
+  }
+)
+)
