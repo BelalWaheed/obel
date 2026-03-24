@@ -1,40 +1,20 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import {
-  ListTodo,
-  Timer,
-  CheckCircle2,
-  Clock,
-  TrendingUp,
-  Zap,
-  Play,
-  ArrowRight,
-  Calendar,
-  Flag,
-  Flame,
-} from 'lucide-react'
+import { ListTodo, Timer, CheckCircle2, TrendingUp } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useHabitStore } from '@/stores/habitStore'
 import { ProductivityCoach } from '@/components/dashboard/ProductivityCoach'
 import { SquadWidget } from '@/components/dashboard/SquadWidget'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-
-dayjs.extend(relativeTime)
-
-const priorityColors: Record<string, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-blue-500',
-}
+import {
+  QuickActionsWidget,
+  DueTodayWidget,
+  DailyHabitsWidget,
+  UrgentTasksWidget,
+} from '@/components/dashboard/DashboardWidgets'
+import { LevelBadge } from '@/components/ui/LevelBadge'
 
 const container = {
   hidden: { opacity: 0 },
@@ -47,14 +27,14 @@ const item = {
 }
 
 export default function DashboardPage() {
-  const navigate = useNavigate()
   const tasks = useTaskStore((s) => s.tasks)
   const getTasksDueToday = useTaskStore((s) => s.getTasksDueToday)
   const getCompletedToday = useTaskStore((s) => s.getCompletedToday)
   const sessionsCompleted = useTimerStore((s) => s.sessionsCompleted)
   const isRunning = useTimerStore((s) => s.isRunning)
   const sessionHistory = useTimerStore((s) => s.sessionHistory)
-  const userName = useAuthStore((s) => s.user?.name || '')
+  const user = useAuthStore((s) => s.user)
+  const userName = user?.name || ''
   const habits = useHabitStore((s) => s.habits)
 
   const tasksDueToday = useMemo(() => getTasksDueToday(), [tasks, getTasksDueToday])
@@ -93,11 +73,16 @@ export default function DashboardPage() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item}>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {greeting}{userName ? `, ${userName}` : ''} 👋
-        </h1>
-        <p className="text-muted-foreground mt-1">Here's what's happening with your productivity today.</p>
+      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {greeting}{userName ? `, ${userName}` : ''} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">Here's what's happening with your productivity today.</p>
+        </div>
+        {user && (
+          <LevelBadge level={user.level || 1} xp={user.xp || 0} size="md" />
+        )}
       </motion.div>
 
       <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -122,120 +107,23 @@ export default function DashboardPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Col 1: Quick Actions */}
         <motion.div variants={item} className="lg:col-span-1">
-          <Card className="p-5 h-full">
-            <h3 className="font-semibold text-lg mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <Button className="w-full justify-start gap-3 h-12 shadow-sm" onClick={() => navigate('/pomodoro')}>
-                {isRunning ? <Zap className="w-5 h-5 text-yellow-300" /> : <Play className="w-5 h-5" />}
-                {isRunning ? 'Continue Focus Session' : 'Start Pomodoro'}
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate('/tasks')}>
-                <ListTodo className="w-5 h-5" />Manage Tasks
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate('/habits')}>
-                <Calendar className="w-5 h-5" />View Habits
-              </Button>
-            </div>
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Overall Task Completion</span>
-                <span className="font-medium">{completionRate}%</span>
-              </div>
-              <Progress value={completionRate} className="h-2" />
-            </div>
-          </Card>
+          <QuickActionsWidget isRunning={isRunning} completionRate={completionRate} />
         </motion.div>
 
-        {/* Col 2: Due Today */}
         <motion.div variants={item} className="lg:col-span-1">
-          <Card className="p-5 h-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg">Due Today</h3>
-              <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/tasks')}>
-                View all <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-            {tasksDueToday.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No tasks due today. You're all caught up! 🎉</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {tasksDueToday.slice(0, 5).map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" onClick={() => navigate('/tasks')}>
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
-                    <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+          <DueTodayWidget tasks={tasksDueToday} />
         </motion.div>
 
-        {/* Col 3: Habits Today */}
         <motion.div variants={item} className="lg:col-span-1">
-          <Card className="p-5 h-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg">Daily Habits</h3>
-              <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/habits')}>
-                Track <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-            {habits.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Build your first daily habit to start fresh.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {habits.slice(0, 5).map((habit) => {
-                  let isDone = false
-                  try {
-                    const todayStr = dayjs().format('YYYY-MM-DD')
-                    isDone = JSON.parse(habit.completedDates || '[]').includes(todayStr)
-                  } catch (e) {}
-
-                  return (
-                    <div key={habit.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors cursor-pointer ${isDone ? 'bg-primary/5 border-primary/20' : 'bg-background hover:bg-muted'}`} onClick={() => navigate('/habits')}>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${isDone ? 'text-primary' : 'text-muted-foreground/30'}`} />
-                        <span className={`text-sm font-medium truncate ${isDone ? 'text-primary' : ''}`}>{habit.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Flame className={`w-3.5 h-3.5 ${habit.currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground/30'}`} />
-                        <span className={`text-xs font-bold ${habit.currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>{habit.currentStreak}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </Card>
+          <DailyHabitsWidget habits={habits} />
         </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {urgentTasks.length > 0 && (
           <motion.div variants={item} className="lg:col-span-2">
-            <Card className="p-5 border-orange-500/30 bg-orange-500/5 h-full">
-              <div className="flex items-center gap-2 mb-4">
-                <Flag className="w-5 h-5 text-orange-500" />
-                <h3 className="font-semibold text-lg">Needs Attention</h3>
-                <Badge variant="secondary" className="ml-1">{urgentTasks.length}</Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {urgentTasks.slice(0, 4).map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:shadow-sm transition-shadow cursor-pointer" onClick={() => navigate('/tasks')}>
-                    <div className={`w-2.5 h-2.5 rounded-full ${priorityColors[task.priority]}`} />
-                    <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
-                    {task.dueDate && <span className="text-xs text-muted-foreground">{dayjs(task.dueDate).fromNow()}</span>}
-                  </div>
-                ))}
-              </div>
-            </Card>
+             <UrgentTasksWidget tasks={urgentTasks} />
           </motion.div>
         )}
 

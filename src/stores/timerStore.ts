@@ -12,6 +12,8 @@ export interface PomodoroSettings {
   longBreakInterval: number
   autoStartBreaks: boolean
   autoStartFocus: boolean
+  soundEnabled: boolean
+  notificationsEnabled: boolean
 }
 
 export interface SessionHistory {
@@ -82,6 +84,8 @@ export const useTimerStore = create<TimerState>()(
         longBreakInterval: 4,
         autoStartBreaks: false,
         autoStartFocus: false,
+        soundEnabled: true,
+        notificationsEnabled: true,
       },
       sessionHistory: [],
       activeTaskId: null,
@@ -210,6 +214,25 @@ export const useTimerStore = create<TimerState>()(
           // Save to API after session complete
           get().saveToUser()
 
+          // XP Gain: 2 XP per minute of focus
+          if (mode === 'focus') {
+            const mins = duration / 60
+            const xp = Math.round(mins * 2)
+            import('@/stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().addXP(xp))
+          }
+
+          // Sound and Notification triggers
+          if (settings.soundEnabled) {
+            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playChime())
+          }
+          if (settings.notificationsEnabled) {
+            import('@/lib/notifications').then(({ notificationSystem }) => {
+              const title = nextMode === 'focus' ? 'Break Over!' : 'Focus Session Complete!'
+              const body = nextMode === 'focus' ? 'Time to get back to work.' : 'Great job! Take a well-deserved break.'
+              notificationSystem.send(title, { body })
+            })
+          }
+
           if (shouldAutoStart) {
             startGlobalTick()
           } else {
@@ -257,6 +280,8 @@ export const useTimerStore = create<TimerState>()(
             longBreakInterval: settings.longBreakInterval ?? 4,
             autoStartBreaks: settings.autoStartBreaks ?? false,
             autoStartFocus: settings.autoStartFocus ?? false,
+            soundEnabled: settings.soundEnabled ?? true,
+            notificationsEnabled: settings.notificationsEnabled ?? true,
           }
 
           set({

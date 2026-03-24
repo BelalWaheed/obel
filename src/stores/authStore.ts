@@ -15,6 +15,10 @@ export interface UserProfile {
   unlockedThemes?: string
   activeTheme?: string
   partnerId?: string
+  xp: number
+  level: number
+  longestFocusStreak: number
+  lastFocusDate?: string
 }
 
 interface AuthState {
@@ -27,6 +31,7 @@ interface AuthState {
   signup: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => void
   updateUser: (data: Partial<UserProfile>) => Promise<void>
+  addXP: (amount: number) => Promise<void>
   clearError: () => void
 }
 
@@ -86,6 +91,9 @@ export const useAuthStore = create<AuthState>()(
             }),
             sessionHistory: '[]',
             totalFocusHours: '0',
+            xp: 0,
+            level: 1,
+            longestFocusStreak: 0,
             createdAt: new Date().toISOString(),
           })
 
@@ -105,10 +113,44 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get()
         if (!user) return
         try {
-          const updated = await apiPut<UserProfile>(`/users/${user.id}`, data)
-          set({ user: { ...user, ...updated } })
+          // Optimistic update
+          set({ user: { ...user, ...data } })
+          await apiPut<UserProfile>(`/users/${user.id}`, data)
         } catch (err) {
           console.error('Failed to update user:', err)
+          // Rollback on error
+          set({ user })
+        }
+      },
+
+      addXP: async (amount) => {
+        const { user } = get()
+        if (!user) return
+        
+        const currentXP = user.xp || 0
+        const currentLevel = user.level || 1
+        const newXP = currentXP + amount
+        
+        // Simple level logic: every 500 XP = 1 level
+        const newLevel = Math.floor(newXP / 500) + 1
+        
+        const updates: Partial<UserProfile> = {
+          xp: newXP,
+          level: newLevel
+        }
+        
+        await get().updateUser(updates)
+        
+        if (newLevel > currentLevel) {
+          console.log(`Level Up! Reached level ${newLevel}`)
+          // Trigger confetti if level up
+          import('canvas-confetti').then(confetti => {
+            confetti.default({
+              particleCount: 200,
+              spread: 100,
+              origin: { y: 0.6 }
+            })
+          })
         }
       },
 

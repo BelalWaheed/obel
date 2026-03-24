@@ -65,6 +65,8 @@ export default function PomodoroPage() {
   const [localInterval, setLocalInterval] = useState(settings.longBreakInterval)
   const [autoBreaks, setAutoBreaks] = useState(settings.autoStartBreaks)
   const [autoFocus, setAutoFocus] = useState(settings.autoStartFocus)
+  const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled)
+  const [notifsEnabled, setNotifsEnabled] = useState(settings.notificationsEnabled)
 
   const minutes = Math.floor(timeRemaining / 60)
   const seconds = timeRemaining % 60
@@ -96,6 +98,8 @@ export default function PomodoroPage() {
       longBreakInterval: localInterval,
       autoStartBreaks: autoBreaks,
       autoStartFocus: autoFocus,
+      soundEnabled,
+      notificationsEnabled: notifsEnabled,
     })
     setShowSettings(false)
   }
@@ -107,6 +111,8 @@ export default function PomodoroPage() {
     setLocalInterval(settings.longBreakInterval)
     setAutoBreaks(settings.autoStartBreaks)
     setAutoFocus(settings.autoStartFocus)
+    setSoundEnabled(settings.soundEnabled)
+    setNotifsEnabled(settings.notificationsEnabled)
     setShowSettings(true)
   }
 
@@ -310,6 +316,25 @@ export default function PomodoroPage() {
                 <input type="checkbox" checked={autoFocus} onChange={(e) => setAutoFocus(e.target.checked)} className="rounded" />
                 Auto-start focus sessions
               </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={soundEnabled} onChange={(e) => setSoundEnabled(e.target.checked)} className="rounded" />
+                Enable timer chime
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={notifsEnabled} onChange={(e) => setNotifsEnabled(e.target.checked)} className="rounded" />
+                Enable browser notifications
+              </label>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs h-8 border-dashed mt-2"
+                onClick={async () => {
+                  const { soundSystem } = await import('@/lib/sounds')
+                  soundSystem.playChime()
+                }}
+              >
+                Test Sound & Initialize Audio
+              </Button>
             </div>
           </div>
           <DialogFooter>

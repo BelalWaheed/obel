@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   ListTodo,
@@ -13,7 +13,10 @@ import {
   LogOut,
   User,
   Clock,
-  WifiOff,
+  Archive,
+  BarChart3,
+  MoreHorizontal,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
@@ -21,6 +24,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useHabitStore } from '@/stores/habitStore'
 import { CommandPalette } from '@/components/CommandPalette'
+import { LevelBadge } from '@/components/ui/LevelBadge'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -29,31 +33,26 @@ const navItems = [
   { path: '/habits', icon: Sparkles, label: 'Habits' },
   { path: '/planner', icon: Clock, label: 'Planner' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/archive', icon: Archive, label: 'Archive' },
+  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
 ]
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
-  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [showTopBar, setShowTopBar] = useState(true)
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
   const navigate = useNavigate()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const { scrollY } = useScroll({ container: scrollContainerRef })
 
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false)
-      // Allow BackgroundSync queues to flush before fetching the real state
-      setTimeout(() => {
-        useTaskStore.getState().fetchTasks()
-        useHabitStore.getState().fetchHabits()
-      }, 3000)
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() || 0
+    if (latest > previous && latest > 50) {
+      setShowTopBar(false)
+    } else {
+      setShowTopBar(true)
     }
-    const handleOffline = () => setIsOffline(true)
-    
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
+  })
 
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -72,22 +71,12 @@ export default function AppLayout() {
   useEffect(() => {
     if (isTimerRunning) {
       const modeLabel = timerMode === 'focus' ? 'Focus' : timerMode === 'shortBreak' ? 'Break' : 'Long Break'
-      document.title = `${timerDisplay} — ${modeLabel} | Obel`
+      document.title = `${timerDisplay} — ${modeLabel} | OBEL`
     } else {
-      document.title = 'Obel'
+      document.title = 'OBEL'
     }
-    return () => { document.title = 'Obel' }
+    return () => { document.title = 'OBEL' }
   }, [isTimerRunning, timerDisplay, timerMode])
-
-  const activeTheme = useAuthStore((s) => s.user?.activeTheme) || 'default'
-
-  useEffect(() => {
-    // Remove all theme classes first
-    document.documentElement.classList.remove('theme-cyberpunk', 'theme-forest', 'theme-sunset')
-    if (activeTheme !== 'default') {
-      document.documentElement.classList.add(`theme-${activeTheme}`)
-    }
-  }, [activeTheme])
 
   useEffect(() => {
     fetchTasks()
@@ -102,131 +91,81 @@ export default function AppLayout() {
 
   const sidebarContent = (
     <>
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground shrink-0">
+      <div className="flex items-center gap-3 px-4 h-16 border-b border-border/50 shrink-0">
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground shrink-0 shadow-[0_0_20px_rgba(var(--primary),0.3)]">
           <Zap className="w-5 h-5" />
         </div>
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="flex items-center gap-2"
-            >
-              <span className="font-bold text-lg tracking-tight text-foreground whitespace-nowrap">
-                Obel
-              </span>
-              {isOffline && (
-                <span className="flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">
-                  <WifiOff className="w-3 h-3" /> Offline
-                </span>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Mini timer indicator */}
-      {isTimerRunning && (
-        <NavLink to="/pomodoro" className="mx-2 mt-3">
+        {!collapsed && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono font-bold ${
-              timerMode === 'focus'
-                ? 'bg-primary/10 text-primary'
-                : 'bg-emerald-500/10 text-emerald-500'
-            }`}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2"
           >
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className={`w-2 h-2 rounded-full ${timerMode === 'focus' ? 'bg-primary' : 'bg-emerald-500'}`}
-            />
-            <span>{timerDisplay}</span>
-            <span className="text-[10px] opacity-70">
-              {timerMode === 'focus' ? 'Focus' : 'Break'}
+            <span className="font-black text-2xl tracking-[0.2em] text-foreground uppercase">
+              OBEL
             </span>
           </motion.div>
-        </NavLink>
-      )}
+        )}
+      </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-hidden">
+      <nav className="flex-1 py-4 px-2 space-y-1 overflow-hidden z-10">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
-            title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 group ${
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
               }`
             }
           >
             <item.icon className="w-5 h-5 shrink-0" />
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="whitespace-nowrap overflow-hidden"
-                >
-                  {item.label}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                className="whitespace-nowrap overflow-hidden"
+              >
+                {item.label}
+              </motion.span>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      {/* User section */}
-      <div className="border-t border-border p-2 space-y-1 shrink-0">
+      <div className="border-t border-border/50 p-2 space-y-1 shrink-0 z-10">
         {user && !collapsed && (
-          <NavLink to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-accent transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            </div>
-          </NavLink>
+          <div className="px-3 py-2 space-y-3">
+            <NavLink to="/profile" className="flex items-center gap-2 rounded-xl hover:bg-white/5 transition-colors p-1">
+              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold truncate">{user.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate uppercase font-bold tracking-widest">{user.email}</p>
+              </div>
+            </NavLink>
+            <LevelBadge level={user.level || 1} xp={user.xp || 0} size="sm" />
+          </div>
         )}
 
         <Button
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
-          title={collapsed ? 'Logout' : undefined}
+          className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="whitespace-nowrap overflow-hidden"
-              >
-                Logout
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {!collapsed && <span>Logout</span>}
         </Button>
 
-        {/* Collapse toggle — desktop only */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center hidden md:flex"
+          className="w-full justify-center hidden md:flex hover:bg-white/5"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>
@@ -235,74 +174,98 @@ export default function AppLayout() {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Desktop sidebar — always visible on md+ */}
+    <div className="flex h-screen overflow-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      {/* BACKGROUND TYPOGRAPHY WATERMARK */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-[0.02] select-none z-0">
+        <div className="absolute top-[-5%] left-[-5%] text-[45vw] font-black leading-none tracking-tighter">
+          OBEL
+        </div>
+        <div className="absolute bottom-[-5%] right-[-5%] text-[30vw] font-black leading-none tracking-tighter text-primary">
+          FOCUS
+        </div>
+      </div>
+
       <motion.aside
-        animate={{ width: collapsed ? 72 : 240 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="relative hidden md:flex flex-col border-r border-border bg-sidebar shrink-0"
+        animate={{ width: collapsed ? 72 : 260 }}
+        className="relative hidden md:flex flex-col border-r border-border/50 bg-black/20 backdrop-blur-3xl shrink-0 z-20"
       >
         {sidebarContent}
       </motion.aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0 relative h-full">
+      <main className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0 relative h-full z-10">
         {/* Mobile top bar */}
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 md:hidden bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary text-primary-foreground">
-              <Zap className="w-4 h-4" />
-            </div>
-            <span className="font-bold text-base">Obel</span>
-            {isOffline && (
-              <span className="flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full ml-1">
-                <WifiOff className="w-3 h-3" />
-              </span>
-            )}
+        <motion.div
+          initial={{ y: 0 }}
+          animate={{ y: showTopBar ? 0 : -60 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center gap-3 px-4 h-14 border-b border-border/50 shrink-0 md:hidden bg-background/50 backdrop-blur-xl sticky top-0 z-40"
+        >
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]">
+            <Zap className="w-4 h-4" />
           </div>
+          <span className="font-black text-xl tracking-widest uppercase">OBEL</span>
+        </motion.div>
 
-          {/* Mini timer on mobile top bar */}
-          {isTimerRunning && (
-            <NavLink to="/pomodoro" className="ml-auto">
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-mono font-bold ${
-                timerMode === 'focus' ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-500'
-              }`}>
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className={`w-1.5 h-1.5 rounded-full ${timerMode === 'focus' ? 'bg-primary' : 'bg-emerald-500'}`}
-                />
-                {timerDisplay}
-              </div>
-            </NavLink>
-          )}
-        </div>
-
-        <div className="flex-1 overflow-auto p-4 sm:p-6 max-w-6xl mx-auto w-full">
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-auto p-4 sm:p-8 max-w-7xl mx-auto w-full"
+        >
           <Outlet />
         </div>
 
-        {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/90 backdrop-blur-md border-t border-border z-50 flex items-center justify-around px-2 pb-safe">
-          {navItems.map((item) => (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/90 backdrop-blur-2xl border-t border-border/50 z-50 flex items-center justify-around px-2 pb-safe">
+          {navItems.slice(0, 4).map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => setShowMoreMenu(false)}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center w-full h-full gap-1 pt-1 ${
+                `flex flex-col items-center justify-center w-full h-full gap-1 ${
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 }`
               }
             >
-              {({ isActive }) => (
-                <>
-                  <item.icon className={`w-5 h-5 ${isActive ? 'fill-primary/20' : ''}`} />
-                  <span className="text-[10px] font-medium">{item.label}</span>
-                </>
-              )}
+              <item.icon className="w-5 h-5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
             </NavLink>
           ))}
+          <button
+            onClick={() => setShowMoreMenu(!showMoreMenu)}
+            className={`flex flex-col items-center justify-center w-full h-full gap-1 ${
+              showMoreMenu ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            {showMoreMenu ? <X className="w-5 h-5" /> : <MoreHorizontal className="w-5 h-5" />}
+            <span className="text-[10px] font-bold uppercase tracking-wider">More</span>
+          </button>
         </nav>
+
+        <AnimatePresence>
+          {showMoreMenu && (
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              className="md:hidden fixed inset-x-0 bottom-16 bg-background/95 backdrop-blur-3xl border-t border-border/50 z-40 p-4 grid grid-cols-2 gap-4 pb-8"
+            >
+              {navItems.slice(4).map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setShowMoreMenu(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 p-4 rounded-2xl ${
+                      isActive ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-foreground'
+                    }`
+                  }
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-bold">{item.label}</span>
+                </NavLink>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <CommandPalette />

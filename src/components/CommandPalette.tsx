@@ -12,60 +12,13 @@ import {
   Plus,
   Search
 } from 'lucide-react'
-
-// Lightweight NLP parser for tasks
-function parseTaskInput(input: string) {
-  let title = input
-  let priority = 'low'
-  const tags: string[] = []
-  let dueDate = null
-
-  // Priority
-  if (title.includes('!urgent') || title.includes('!high')) {
-    priority = 'high'
-    title = title.replace(/!(urgent|high)/g, '')
-  } else if (title.includes('!med') || title.includes('!medium')) {
-    priority = 'medium'
-    title = title.replace(/!(med|medium)/g, '')
-  } else if (title.includes('!low')) {
-    title = title.replace(/!low/g, '')
-  }
-
-  // Tags (#health, etc)
-  const tagMathces = title.match(/#[\w-]+/g)
-  if (tagMathces) {
-    tagMathces.forEach(t => tags.push(t.substring(1)))
-    title = title.replace(/#[\w-]+/g, '')
-  }
-
-  // Basic Dates
-  const lowerTitle = title.toLowerCase()
-  if (lowerTitle.includes(' tomorrow')) {
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    dueDate = d.toISOString()
-    title = title.replace(/tomorrow/ig, '')
-  } else if (lowerTitle.includes(' today')) {
-    dueDate = new Date().toISOString()
-    title = title.replace(/today/ig, '')
-  } else if (lowerTitle.includes(' next week')) {
-    const d = new Date()
-    d.setDate(d.getDate() + 7)
-    dueDate = d.toISOString()
-    title = title.replace(/next week/ig, '')
-  }
-
-  return {
-    title: title.trim(),
-    priority: priority as 'low'|'medium'|'high',
-    tags,
-    dueDate
-  }
-}
+import { parseCommand } from '@/lib/ai'
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null)
+  const [isParsing, setIsParsing] = useState(false)
   const navigate = useNavigate()
   const addTask = useTaskStore(s => s.addTask)
 
@@ -86,24 +39,46 @@ export function CommandPalette() {
     command()
   }
 
-  const handleCreateTask = () => {
+  const handleCreateTask = async () => {
     if (!inputValue.trim()) return
-    const { title, priority, tags, dueDate } = parseTaskInput(inputValue)
-    if (!title) return
+    setIsParsing(true)
+    
+    try {
+      const parsed = await parseCommand(inputValue)
+      if (!parsed.title) return
 
-    addTask({
-      title,
-      description: '',
-      status: 'todo',
-      priority,
-      tags,
-      subtasks: [],
-      dueDate: dueDate || undefined,
-      focusSessions: 0,
-      focusTime: 0
-    })
-    runCommand(() => navigate('/tasks'))
+      addTask({
+        title: parsed.title,
+        description: '',
+        status: 'todo',
+        priority: parsed.priority,
+        tags: parsed.tags,
+        subtasks: [],
+        dueDate: parsed.dueDate || undefined,
+        focusSessions: 0,
+        focusTime: 0
+      })
+      runCommand(() => navigate('/tasks'))
+    } finally {
+      setIsParsing(false)
+    }
   }
+
+  // Effect to perform "live" parsing as user stops typing
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (inputValue.length > 5) {
+        // Only parse if it looks like a task (not just navigation)
+        setIsParsing(true)
+        const parsed = await parseCommand(inputValue)
+        setAiSuggestions(parsed)
+        setIsParsing(false)
+      } else {
+        setAiSuggestions(null)
+      }
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [inputValue])
 
   if (!open) return null
 
@@ -151,18 +126,28 @@ export function CommandPalette() {
                 onSelect={handleCreateTask}
                 className="data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground group transition-colors"
                 value={`create task ${inputValue}`}
+                disabled={isParsing}
               >
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 group-data-[selected=true]:bg-black/20 text-primary group-data-[selected=true]:text-primary-foreground">
-                  <Plus className="w-4 h-4" />
+                  {isParsing ? <Sparkles className="w-4 h-4 animate-pulse" /> : <Plus className="w-4 h-4" />}
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span className="font-medium">Create Task</span>
-                  <span className="text-xs opacity-70 truncate">{parseTaskInput(inputValue).title}</span>
+                  <span className="font-medium">{isParsing ? 'AI is understanding...' : 'Create Intelligent Task'}</span>
+                  <span className="text-xs opacity-70 truncate">{aiSuggestions?.title || inputValue}</span>
                 </div>
-                <div className="flex gap-1">
-                  {parseTaskInput(inputValue).priority === 'high' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-500">Urgent</span>}
-                  {parseTaskInput(inputValue).tags.map(t => <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-white/10">#{t}</span>)}
-                </div>
+                {aiSuggestions && (
+                  <div className="flex gap-1 animate-in fade-in slide-in-from-right-2">
+                    {aiSuggestions.priority === 'high' || aiSuggestions.priority === 'urgent' ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-500 font-bold uppercase tracking-tighter">Urgent</span>
+                    ) : null}
+                    {aiSuggestions.dueDate && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-500 font-bold">
+                        {new Date(aiSuggestions.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                    {aiSuggestions.tags.map((t: string) => <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-white/10">#{t}</span>)}
+                  </div>
+                )}
               </Command.Item>
             </Command.Group>
           )}

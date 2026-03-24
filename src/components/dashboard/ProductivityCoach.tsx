@@ -1,16 +1,19 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { BrainCircuit, Lightbulb, TrendingUp, AlertCircle, Quote } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { useTaskStore } from '@/stores/taskStore'
 import { useHabitStore } from '@/stores/habitStore'
 import { useTimerStore } from '@/stores/timerStore'
+import { getProductivityAdvice } from '@/lib/ai'
 import dayjs from 'dayjs'
 
 export function ProductivityCoach() {
   const tasks = useTaskStore(s => s.tasks)
   const habits = useHabitStore(s => s.habits)
   const sessionHistory = useTimerStore(s => s.sessionHistory)
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null)
+  const [isAiLoading, setIsAiLoading] = useState(false)
 
   const insights = useMemo(() => {
     const list: { id: string; title: string; message: string; type: 'positive' | 'warning' | 'neutral' | 'tip'; icon: React.ElementType }[] = []
@@ -107,18 +110,52 @@ export function ProductivityCoach() {
     }
 
     // Return max 2 insights so it doesn't overwhelm the dashboard
-    return list.slice(0, 2)
-  }, [tasks, habits, sessionHistory])
+    const finalInsights = [...list]
+    if (aiAdvice) {
+      finalInsights.unshift({
+        id: 'ai-gen-advice',
+        title: 'Personalized Coaching',
+        message: aiAdvice,
+        type: 'tip',
+        icon: BrainCircuit
+      })
+    }
+    return finalInsights.slice(0, 2)
+  }, [tasks, habits, sessionHistory, aiAdvice])
+
+  useEffect(() => {
+    async function fetchAI() {
+      if (tasks.length === 0) return
+      setIsAiLoading(true)
+      try {
+        const advice = await getProductivityAdvice({ tasks, habits, sessions: sessionHistory })
+        setAiAdvice(advice)
+      } finally {
+        setIsAiLoading(false)
+      }
+    }
+    fetchAI()
+  }, [tasks.length, habits.length, sessionHistory.length])
 
   if (insights.length === 0) return null
 
   return (
     <Card className="p-5 border-primary/20 bg-linear-to-br from-primary/5 to-background">
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 bg-primary/10 rounded-xl">
+        <div className="p-2 bg-primary/10 rounded-xl relative">
           <BrainCircuit className="w-5 h-5 text-primary" />
+          {isAiLoading && (
+            <motion.div 
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute inset-0 bg-primary/40 rounded-xl"
+            />
+          )}
         </div>
-        <h3 className="font-semibold text-lg tracking-tight">AI Coach Insights</h3>
+        <h3 className="font-semibold text-lg tracking-tight flex items-center gap-2">
+          AI Coach Insights
+          {isAiLoading && <span className="text-[10px] text-primary animate-pulse uppercase font-bold tracking-widest">Thinking...</span>}
+        </h3>
       </div>
       <div className="space-y-3">
         {insights.map((insight, i) => {

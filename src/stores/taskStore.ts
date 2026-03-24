@@ -180,6 +180,11 @@ export const useTaskStore = create<TaskState>()(
       status: newStatus,
       completedAt: isDone ? new Date().toISOString() : undefined,
     }
+    if (isDone) {
+      import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playSuccess())
+      // Gain 50 XP for completing a task
+      import('@/stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().addXP(50))
+    }
     await get().updateTask(id, updates)
   },
 
