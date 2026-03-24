@@ -49,24 +49,36 @@ export function QuickActionsWidget({ isRunning, completionRate }: { isRunning: b
 export function DueTodayWidget({ tasks }: { tasks: Task[] }) {
   const navigate = useNavigate()
   return (
-    <Card className="p-5 h-full">
+    <Card className="p-5 h-full bg-card/40 backdrop-blur-xl border-border/40">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Due Today</h3>
-        <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/tasks')}>
-          View all <ArrowRight className="w-4 h-4" />
+        <h3 className="font-semibold text-lg flex items-center gap-2">
+          <Clock className="w-4 h-4 text-primary" />
+          Due Today
+        </h3>
+        <Button variant="ghost" size="sm" className="gap-1 text-xs hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => navigate('/tasks')}>
+          View all <ArrowRight className="w-3.5 h-3.5" />
         </Button>
       </div>
       {tasks.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <Clock className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">No tasks due today. You're all caught up! 🎉</p>
+        <div className="flex flex-col items-center justify-center py-10 text-muted-foreground/50 border-2 border-dashed border-border/20 rounded-2xl">
+          <CheckCircle2 className="w-8 h-8 mb-2 opacity-20" />
+          <p className="text-xs font-bold tracking-widest uppercase">Clear Horizon</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {tasks.slice(0, 5).map((task) => (
-            <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" onClick={() => navigate('/tasks')}>
-              <div className={`w-2 h-2 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
-              <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
+            <div 
+              key={task.id} 
+              className={`flex items-center gap-3 p-3 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 transition-all cursor-pointer group shadow-sm hover:shadow-primary/5 ${
+                task.priority === 'urgent' ? 'shadow-red-500/5 hover:shadow-red-500/10' :
+                task.priority === 'high' ? 'shadow-orange-500/5 hover:shadow-orange-500/10' :
+                task.priority === 'medium' ? 'shadow-yellow-500/5 hover:shadow-yellow-500/10' :
+                'shadow-blue-500/5 hover:shadow-blue-500/10'
+              }`} 
+              onClick={() => navigate('/tasks')}
+            >
+              <div className={`w-1.5 h-6 rounded-full shrink-0 transition-transform group-hover:scale-y-125 ${priorityColors[task.priority]}`} />
+              <span className="text-sm font-bold truncate flex-1 group-hover:text-primary transition-colors">{task.title}</span>
             </div>
           ))}
         </div>
@@ -122,18 +134,30 @@ export function UrgentTasksWidget({ tasks }: { tasks: Task[] }) {
   const navigate = useNavigate()
   if (tasks.length === 0) return null
   return (
-    <Card className="p-5 border-orange-500/30 bg-orange-500/5 h-full">
-      <div className="flex items-center gap-2 mb-4">
-        <Flag className="w-5 h-5 text-orange-500" />
-        <h3 className="font-semibold text-lg">Needs Attention</h3>
-        <Badge variant="secondary" className="ml-1">{tasks.length}</Badge>
+    <Card className="p-5 border-primary/20 bg-primary/5 h-full backdrop-blur-xl rounded-[2rem] overflow-hidden relative">
+      <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="flex items-center gap-3 mb-6 relative z-10">
+        <div className="p-2 rounded-xl bg-primary/10">
+          <Flag className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="font-bold text-lg tracking-tight">Focus Units</h3>
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">High Priority Backlog</p>
+        </div>
+        <Badge variant="outline" className="ml-auto bg-primary/10 border-primary/20 text-primary font-black px-2">{tasks.length}</Badge>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10">
         {tasks.slice(0, 4).map((task) => (
-          <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:shadow-sm transition-shadow cursor-pointer" onClick={() => navigate('/tasks')}>
-            <div className={`w-2.5 h-2.5 rounded-full ${priorityColors[task.priority]}`} />
-            <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
-            {task.dueDate && <span className="text-xs text-muted-foreground">{dayjs(task.dueDate).fromNow()}</span>}
+          <div 
+            key={task.id} 
+            className="group flex flex-col gap-2 p-4 rounded-2xl bg-card/60 border border-border/50 hover:border-primary/40 hover:bg-card hover:shadow-2xl hover:shadow-primary/10 transition-all cursor-pointer" 
+            onClick={() => navigate('/tasks')}
+          >
+            <div className="flex items-center justify-between">
+               <div className={`w-8 h-1 rounded-full ${priorityColors[task.priority]} opacity-80`} />
+               {task.dueDate && <span className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/60">{dayjs(task.dueDate).fromNow()}</span>}
+            </div>
+            <span className="text-sm font-bold tracking-tight line-clamp-2 group-hover:text-primary transition-colors">{task.title}</span>
           </div>
         ))}
       </div>

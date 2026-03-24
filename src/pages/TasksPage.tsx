@@ -127,6 +127,17 @@ export default function TasksPage() {
               const prioConf = priorityConfig[task.priority]
               const totalSubtasks = task.subtasks?.length || 0
               const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
+              const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+
+              // Priority-specific ambient glow colors
+              const glowColors: Record<Priority, string> = {
+                urgent: 'shadow-red-500/10 dark:shadow-red-500/20',
+                high: 'shadow-orange-500/10 dark:shadow-orange-500/20',
+                medium: 'shadow-yellow-500/10 dark:shadow-yellow-500/20',
+                low: 'shadow-blue-500/10 dark:shadow-blue-500/20'
+              }
+
+              const priorityInitial = task.priority.charAt(0).toUpperCase()
 
               return (
                 <motion.div
@@ -138,17 +149,26 @@ export default function TasksPage() {
                 >
                   <Card
                     onClick={() => setSelectedTaskDetailsId(task.id)}
-                    className={`relative overflow-hidden cursor-pointer group transition-all duration-300 rounded-2xl ${
+                    className={`relative overflow-hidden cursor-pointer group transition-all duration-500 rounded-3xl border-border/40 ${
                       isDone 
-                        ? 'opacity-60 bg-muted/10 border-transparent shadow-none' 
-                        : 'bg-card/70 backdrop-blur-md border border-border/50 hover:border-primary/40 shadow-sm hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5'
+                        ? 'opacity-60 bg-muted/5 border-transparent shadow-none' 
+                        : `bg-card/40 backdrop-blur-xl border-border/50 hover:border-primary/40 shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 ${glowColors[task.priority]}`
                     }`}
                   >
+                    {/* Glassmorphic Inner Shine */}
                     {!isDone && (
-                      <div className="absolute inset-0 bg-linear-to-r from-white/10 to-transparent dark:from-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                      <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent dark:from-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                    )}
+
+                    {/* Priority Background Initial */}
+                    {!isDone && (
+                      <div className="absolute -right-2 -bottom-4 text-9xl font-black text-foreground/[0.03] dark:text-foreground/[0.02] italic pointer-events-none select-none transition-transform duration-500 group-hover:scale-110 group-hover:-translate-x-4">
+                        {priorityInitial}
+                      </div>
                     )}
                     
-                    <div className="p-4 flex items-center gap-4 relative z-10">
+                    <div className="p-5 flex items-center gap-5 relative z-10">
+                      {/* Checkbox circle */}
                       <button
                         onClick={(e) => { 
                           e.stopPropagation(); 
@@ -164,42 +184,56 @@ export default function TasksPage() {
                           }
                           toggleComplete(task.id) 
                         }}
-                        className={`w-7 h-7 shrink-0 rounded-full border-[2.5px] flex items-center justify-center transition-all duration-300 ${
+                        className={`w-8 h-8 shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
                           isDone 
-                            ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-md shadow-primary/30' 
-                            : 'border-muted-foreground/40 hover:border-primary text-transparent hover:bg-primary/10'
+                            ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-lg shadow-primary/40' 
+                            : 'border-muted-foreground/30 hover:border-primary text-transparent hover:bg-primary/10'
                         }`}
                       >
-                        <CheckCircle2 className={`w-4 h-4 ${isDone ? 'opacity-100' : 'opacity-0'} transition-opacity`} strokeWidth={3} />
+                        <CheckCircle2 className={`w-4.5 h-4.5 ${isDone ? 'opacity-100' : 'opacity-0'} transition-opacity`} strokeWidth={3} />
                       </button>
                       
-                      <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex-1 min-w-0 pr-4">
                         <div className="flex items-center gap-3">
-                          <h3 className={`font-bold text-lg truncate transition-colors duration-300 ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                          <h3 className={`font-bold text-xl tracking-tight transition-all duration-500 ${isDone ? 'line-through text-muted-foreground/60' : 'text-foreground group-hover:text-primary/90'}`}>
                             {task.title}
                           </h3>
                         </div>
                         {(!isDone && totalSubtasks > 0) && (
-                          <p className="text-xs font-semibold text-muted-foreground mt-0.5">
-                            {completedSubtasks}/{totalSubtasks} steps
-                          </p>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPercentage}%` }}
+                                className="h-full bg-primary/60"
+                              />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground/80">
+                              {completedSubtasks}/{totalSubtasks} STEPS
+                            </span>
+                          </div>
                         )}
                       </div>
                       
-                      <Badge variant="outline" className={`hidden sm:flex capitalize px-2.5 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${prioConf.color} ${prioConf.border} ${isDone ? 'opacity-50 grayscale' : ''}`}>
+                      <Badge variant="outline" className={`hidden sm:flex capitalize px-3 py-1 text-[10px] font-black tracking-widest rounded-full border shrink-0 transition-transform duration-500 group-hover:scale-105 ${prioConf.color} ${prioConf.border} ${isDone ? 'opacity-40 grayscale' : ''}`}>
                          {prioConf.label}
                       </Badge>
                       
                       {!isDone && (
                         <Button
                           onClick={(e) => { e.stopPropagation(); handleStartFocus(task.id) }}
-                          className="shrink-0 gap-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground border border-primary/20 font-bold rounded-xl h-9 px-4 shadow-none hover:shadow-md hover:shadow-primary/30 transition-all ml-2"
+                          className="shrink-0 group/btn relative overflow-hidden bg-primary/10 text-primary hover:bg-primary dark:hover:text-black hover:text-white border border-primary/20 font-black uppercase tracking-widest text-[10px] rounded-2xl h-10 px-5 shadow-none hover:shadow-xl hover:shadow-primary/40 transition-all ml-3"
                         >
-                          <Play className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Focus</span>
+                          <Play className="w-3.5 h-3.5 relative z-10 transition-transform group-hover/btn:scale-125" />
+                          <span className="hidden sm:inline relative z-10">Focus</span>
                         </Button>
                       )}
                     </div>
+
+                    {/* Bottom accent line for active tasks */}
+                    {!isDone && (
+                       <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-linear-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    )}
                   </Card>
                 </motion.div>
               )
