@@ -12,9 +12,7 @@ import {
   Zap,
   LogOut,
   User,
-  Clock,
   Archive,
-  BarChart3,
   MoreHorizontal,
   X,
 } from 'lucide-react'
@@ -31,10 +29,9 @@ const navItems = [
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/pomodoro', icon: Timer, label: 'Pomodoro' },
   { path: '/habits', icon: Sparkles, label: 'Habits' },
-  { path: '/planner', icon: Clock, label: 'Planner' },
+  { path: '/profile', icon: User, label: 'Profile' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/archive', icon: Archive, label: 'Archive' },
-  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
 ]
 
 export default function AppLayout() {

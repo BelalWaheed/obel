@@ -17,6 +17,7 @@ interface TaskFormModalProps {
 export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalProps) {
   const addTask = useTaskStore((state) => state.addTask)
   const updateTask = useTaskStore((state) => state.updateTask)
+  const lists = useTaskStore((state) => state.lists)
 
   const [formTitle, setFormTitle] = useState('')
   const [formDescription, setFormDescription] = useState('')
@@ -25,6 +26,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
   const [formDueDate, setFormDueDate] = useState('')
   const [formStatus, setFormStatus] = useState<TaskStatus>('todo')
   const [formSubtasks, setFormSubtasks] = useState<Subtask[]>([])
+  const [formListId, setFormListId] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -38,6 +40,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
         setFormDueDate(editingTask.dueDate || '')
         setFormStatus(editingTask.status)
         setFormSubtasks(editingTask.subtasks || [])
+        setFormListId(editingTask.listId || '')
       } else {
         setFormTitle('')
         setFormDescription('')
@@ -46,6 +49,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
         setFormDueDate(dayjs().format('YYYY-MM-DD')) // Default deadline to today
         setFormStatus('todo')
         setFormSubtasks([])
+        setFormListId('imp') // Default to IMP
       }
     }
   }, [isOpen, editingTask])
@@ -64,6 +68,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
         dueDate: formDueDate || undefined,
         status: formStatus,
         subtasks: formSubtasks,
+        listId: formListId || undefined,
       })
     } else {
       await addTask({
@@ -74,6 +79,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
         subtasks: formSubtasks,
         dueDate: formDueDate || undefined,
         status: formStatus,
+        listId: formListId || undefined,
       })
     }
     setIsSaving(false)
@@ -89,14 +95,14 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
             {editingTask ? 'Edit Task' : 'Define New Objective'}
           </DialogTitle>
         </div>
-        <div className="px-6 py-6 space-y-5">
+        <div className="px-6 py-6 space-y-4">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider block">Objective Title</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Objective Title</label>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-7 text-[10px] font-bold uppercase tracking-tight gap-1.5 text-primary hover:text-primary hover:bg-primary/10 rounded-full px-3"
+                className="h-6 text-[9px] font-bold uppercase tracking-tight gap-1 text-primary hover:text-primary hover:bg-primary/10 rounded-full px-2"
                 onClick={async () => {
                   if (!formTitle.trim()) return
                   setIsGenerating(true)
@@ -124,118 +130,96 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
               onChange={(e) => setFormTitle(e.target.value)} 
               onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }} 
               autoFocus 
-              className="h-12 text-lg font-medium bg-background/50 border-border/50 rounded-xl focus-visible:ring-primary/30"
+              className="h-11 text-base font-semibold bg-background/50 border-border/50 rounded-xl focus-visible:ring-primary/30 shadow-xs"
             />
           </div>
 
-          {/* Subtasks Section */}
-          <div className="space-y-3">
+          {/* Subtasks Section - More Compact */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider block">Actionable Steps</label>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Actionable Steps</label>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-7 w-7 p-0 rounded-full flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors"
+                className="h-6 w-6 p-0 rounded-full flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors"
                 onClick={() => {
                   const newSubtask: Subtask = { id: Math.random().toString(36).substr(2, 9), title: '', completed: false }
                   setFormSubtasks([...formSubtasks, newSubtask])
                 }}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
               </Button>
             </div>
-            <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-              {formSubtasks.length === 0 && (
-                <div className="text-center py-4 text-xs text-muted-foreground/50 border border-dashed border-border/50 rounded-xl">
-                  No steps defined yet.
-                </div>
-              )}
-              {formSubtasks.map((st, idx) => (
-                <div key={st.id} className="flex gap-2 group animate-in fade-in slide-in-from-top-1 duration-200">
-                  <Input 
-                    placeholder={`Step ${idx + 1}...`}
-                    value={st.title}
-                    onChange={(e) => {
-                      const updated = [...formSubtasks]
-                      updated[idx].title = e.target.value
-                      setFormSubtasks(updated)
-                    }}
-                    className="h-10 text-sm bg-background/30 border-border/30 rounded-lg focus-visible:ring-primary/20"
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    onClick={() => {
-                      setFormSubtasks(formSubtasks.filter(s => s.id !== st.id))
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {formSubtasks.length > 0 && (
+              <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar">
+                {formSubtasks.map((st, idx) => (
+                  <div key={st.id} className="flex gap-2 group animate-in fade-in slide-in-from-top-1 duration-200">
+                    <Input 
+                      placeholder={`Step ${idx + 1}...`}
+                      value={st.title}
+                      onChange={(e) => {
+                        const updated = [...formSubtasks]
+                        updated[idx].title = e.target.value
+                        setFormSubtasks(updated)
+                      }}
+                      className="h-9 text-xs bg-background/30 border-border/30 rounded-lg focus-visible:ring-primary/20"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={() => {
+                        setFormSubtasks(formSubtasks.filter(s => s.id !== st.id))
+                      }}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Description</label>
-            <textarea 
-              placeholder="Add additional context or notes..." 
-              value={formDescription} 
-              onChange={(e) => setFormDescription(e.target.value)} 
-              className="flex min-h-[100px] w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-base text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 resize-none font-medium" 
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-5">
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Priority</label>
-              <Select value={formPriority} onValueChange={(v) => setFormPriority(v as Priority)}>
-                <SelectTrigger className="h-12 bg-background/50 border-border/50 rounded-xl text-base font-medium">
-                  <SelectValue />
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">List / Category</label>
+              <Select value={formListId} onValueChange={(v) => setFormListId(v || '')}>
+                <SelectTrigger className="h-11 bg-background/50 border-border/50 rounded-xl text-sm font-semibold">
+                  <SelectValue placeholder="Select a list" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border/50">
-                  <SelectItem value="low">🔵 Low Priority</SelectItem>
-                  <SelectItem value="medium">🟡 Medium Priority</SelectItem>
-                  <SelectItem value="high">🟠 High Priority</SelectItem>
-                  <SelectItem value="urgent">🔴 Urgent</SelectItem>
+                  {lists.map(list => (
+                    <SelectItem key={list.id} value={list.id}>
+                      {list.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Status</label>
-              <Select value={formStatus} onValueChange={(v) => setFormStatus(v as TaskStatus)}>
-                <SelectTrigger className="h-12 bg-background/50 border-border/50 rounded-xl text-base font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border/50">
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
-                </SelectContent>
-              </Select>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">Deadline</label>
+              <Input 
+                type="date" 
+                value={formDueDate} 
+                onChange={(e) => setFormDueDate(e.target.value)} 
+                className="h-11 bg-background/50 border-border/50 rounded-xl text-sm font-semibold focus-visible:ring-primary/30 w-full"
+              />
             </div>
           </div>
+
           <div>
-            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Tags</label>
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">Tags</label>
             <Input 
               placeholder="design, coding, meeting..." 
               value={formTags} 
               onChange={(e) => setFormTags(e.target.value)} 
-              className="h-12 bg-background/50 border-border/50 rounded-xl text-base font-medium focus-visible:ring-primary/30"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Deadline</label>
-            <Input 
-              type="date" 
-              value={formDueDate} 
-              onChange={(e) => setFormDueDate(e.target.value)} 
-              className="h-12 bg-background/50 border-border/50 rounded-xl text-base font-medium focus-visible:ring-primary/30 w-full"
+              className="h-11 bg-background/50 border-border/50 rounded-xl text-sm font-semibold focus-visible:ring-primary/30"
             />
           </div>
         </div>
-        <div className="px-6 py-5 border-t border-border/50 bg-muted/10 flex justify-end gap-3">
-          <Button variant="outline" className="h-12 px-6 rounded-xl font-bold border-border/50" onClick={onClose}>Cancel</Button>
-          <Button className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/25" onClick={handleSave} disabled={!formTitle.trim() || isSaving}>
+        <div className="px-6 py-4 border-t border-border/50 bg-muted/10 flex justify-end gap-3">
+          <Button variant="outline" className="h-11 px-5 rounded-xl font-bold border-border/50 text-sm" onClick={onClose}>Cancel</Button>
+          <Button className="h-11 px-7 rounded-xl font-black text-sm gap-2 shadow-lg shadow-primary/25" onClick={handleSave} disabled={!formTitle.trim() || isSaving}>
             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
                 {editingTask ? 'Save Changes' : 'Create Objective'}

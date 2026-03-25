@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Readex+Pro:wght@200;300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -6,8 +6,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: 'Inter', var(--font-sans);
+    --font-heading: 'Readex Pro', 'Inter', var(--font-sans);
     --font-sans: 'Inter', system-ui, sans-serif;
+    --font-arabic: 'Readex Pro', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,33 +50,33 @@
 }
 
 :root {
-    --background: #f0e8f3;
+    --background: #f8f4fa;
     --foreground: #180e1b;
-    --card: #f8f1fa;
+    --card: #ffffff;
     --card-foreground: #180e1b;
-    --popover: #f8f1fa;
+    --popover: #ffffff;
     --popover-foreground: #180e1b;
     --primary: #492e56;
-    --primary-foreground: #f0e8f3;
+    --primary-foreground: #f8f4fa;
     --secondary: #a9c492;
     --secondary-foreground: #180e1b;
-    --muted: #e2d8e6;
+    --muted: #ece4f0;
     --muted-foreground: #6b5d70;
     --accent: #509570;
-    --accent-foreground: #f0e8f3;
+    --accent-foreground: #f8f4fa;
     --destructive: #df4444;
     --destructive-foreground: #ffffff;
-    --border: #d8cbdc;
-    --input: #d8cbdc;
+    --border: #dfd4e2;
+    --input: #dfd4e2;
     --ring: #492e56;
     --radius: 0.75rem;
-    --sidebar: #f0e8f3;
+    --sidebar: #f8f4fa;
     --sidebar-foreground: #180e1b;
     --sidebar-primary: #492e56;
-    --sidebar-primary-foreground: #f0e8f3;
-    --sidebar-accent: #e2d8e6;
+    --sidebar-primary-foreground: #f8f4fa;
+    --sidebar-accent: #ece4f0;
     --sidebar-accent-foreground: #180e1b;
-    --sidebar-border: #d8cbdc;
+    --sidebar-border: #dfd4e2;
 
     --ff-success: #509570;
     --ff-warning: #f59e0b;
@@ -84,32 +85,32 @@
 }
 
 .dark {
-    --background: #150d18;
-    --foreground: #ede3f0;
-    --card: #1d1221;
-    --card-foreground: #ede3f0;
-    --popover: #1d1221;
-    --popover-foreground: #ede3f0;
+    --background: #1e1423;
+    --foreground: #f0eaf2;
+    --card: #261a2c;
+    --card-foreground: #f0eaf2;
+    --popover: #261a2c;
+    --popover-foreground: #f0eaf2;
     --primary: #c4aad1;
-    --primary-foreground: #150d18;
+    --primary-foreground: #1e1423;
     --secondary: #526d3b;
-    --secondary-foreground: #ede3f0;
-    --muted: #211624;
-    --muted-foreground: #9a8b9f;
+    --secondary-foreground: #f0eaf2;
+    --muted: #2e2133;
+    --muted-foreground: #a698aa;
     --accent: #6caf8b;
-    --accent-foreground: #150d18;
+    --accent-foreground: #1e1423;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: #2d1d31;
-    --input: #2d1d31;
+    --border: #3a2a3f;
+    --input: #3a2a3f;
     --ring: #c4aad1;
-    --sidebar: #150d18;
-    --sidebar-foreground: #ede3f0;
+    --sidebar: #1e1423;
+    --sidebar-foreground: #f0eaf2;
     --sidebar-primary: #c4aad1;
-    --sidebar-primary-foreground: #150d18;
-    --sidebar-accent: #211624;
-    --sidebar-accent-foreground: #ede3f0;
-    --sidebar-border: #211624;
+    --sidebar-primary-foreground: #1e1423;
+    --sidebar-accent: #2e2133;
+    --sidebar-accent-foreground: #f0eaf2;
+    --sidebar-border: #2e2133;
 }
 
 @layer base {

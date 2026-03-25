@@ -5,13 +5,9 @@ import { Card } from '@/components/ui/card'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useHabitStore } from '@/stores/habitStore'
 import { ProductivityCoach } from '@/components/dashboard/ProductivityCoach'
-import { SquadWidget } from '@/components/dashboard/SquadWidget'
 import {
-  QuickActionsWidget,
   DueTodayWidget,
-  DailyHabitsWidget,
   UrgentTasksWidget,
 } from '@/components/dashboard/DashboardWidgets'
 import { LevelBadge } from '@/components/ui/LevelBadge'
@@ -31,11 +27,9 @@ export default function DashboardPage() {
   const getTasksDueToday = useTaskStore((s) => s.getTasksDueToday)
   const getCompletedToday = useTaskStore((s) => s.getCompletedToday)
   const sessionsCompleted = useTimerStore((s) => s.sessionsCompleted)
-  const isRunning = useTimerStore((s) => s.isRunning)
   const sessionHistory = useTimerStore((s) => s.sessionHistory)
   const user = useAuthStore((s) => s.user)
   const userName = user?.name || ''
-  const habits = useHabitStore((s) => s.habits)
 
   const tasksDueToday = useMemo(() => getTasksDueToday(), [tasks, getTasksDueToday])
   const completedToday = useMemo(() => getCompletedToday(), [tasks, getCompletedToday])
@@ -59,11 +53,6 @@ export default function DashboardPage() {
     return 'Good evening'
   }, [])
 
-  const completionRate = useMemo(() => {
-    if (tasks.length === 0) return 0
-    return Math.round((tasks.filter((t) => t.status === 'done').length / tasks.length) * 100)
-  }, [tasks])
-
   const stats = [
     { label: 'Active Tasks', value: activeTasks.length, icon: ListTodo, color: 'text-primary', bgColor: 'bg-primary/10' },
     { label: 'Completed Today', value: completedToday.length, icon: CheckCircle2, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
@@ -72,8 +61,8 @@ export default function DashboardPage() {
   ]
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
+      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             {greeting}{userName ? `, ${userName}` : ''} 👋
@@ -102,35 +91,21 @@ export default function DashboardPage() {
         })}
       </motion.div>
 
-      <motion.div variants={item}>
-        <ProductivityCoach />
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div variants={item} className="lg:col-span-1">
-          <QuickActionsWidget isRunning={isRunning} completionRate={completionRate} />
-        </motion.div>
-
-        <motion.div variants={item} className="lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <motion.div variants={item}>
           <DueTodayWidget tasks={tasksDueToday} />
         </motion.div>
 
-        <motion.div variants={item} className="lg:col-span-1">
-          <DailyHabitsWidget habits={habits} />
-        </motion.div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {urgentTasks.length > 0 && (
-          <motion.div variants={item} className="lg:col-span-2">
+          <motion.div variants={item}>
              <UrgentTasksWidget tasks={urgentTasks} />
           </motion.div>
         )}
-
-        <motion.div variants={item} className={urgentTasks.length > 0 ? "lg:col-span-1" : "lg:col-span-3"}>
-          <SquadWidget />
-        </motion.div>
       </div>
+
+      <motion.div variants={item}>
+        <ProductivityCoach />
+      </motion.div>
     </motion.div>
   )
 }

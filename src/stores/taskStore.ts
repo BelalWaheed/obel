@@ -6,6 +6,12 @@ import { useAuthStore } from './authStore'
 export type Priority = 'low' | 'medium' | 'high' | 'urgent'
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
 
+export interface TaskList {
+  id: string
+  title: string
+  order: number
+}
+
 export interface Subtask {
   id: string
   title: string
@@ -28,6 +34,7 @@ export interface Task {
   focusTime?: number
   scheduledTime?: string // e.g. "09:00"
   estimatedDuration?: number // in minutes
+  listId?: string
 }
 
 // Shape coming from API (tags/subtasks are JSON strings)
@@ -45,6 +52,7 @@ interface ApiTask {
   userId: string
   scheduledTime?: string
   estimatedDuration?: number
+  listId?: string
 }
 
 function parseApiTask(raw: ApiTask): Task {
@@ -62,6 +70,7 @@ function parseApiTask(raw: ApiTask): Task {
     completedAt: raw.completedAt || undefined,
     scheduledTime: raw.scheduledTime || undefined,
     estimatedDuration: raw.estimatedDuration || undefined,
+    listId: raw.listId || undefined,
   }
 }
 
@@ -78,6 +87,7 @@ function serializeTask(task: Partial<Task>) {
 
 interface TaskState {
   tasks: Task[]
+  lists: TaskList[]
   isLoading: boolean
   error: string | null
 
@@ -86,6 +96,10 @@ interface TaskState {
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>
   deleteTask: (id: string) => Promise<void>
   toggleComplete: (id: string) => Promise<void>
+
+  // List actions
+  updateListTitle: (id: string, title: string) => void
+  addList: (title: string) => void
 
   // Subtask helpers
   addSubtask: (taskId: string, title: string) => Promise<void>
@@ -99,10 +113,17 @@ interface TaskState {
   getCompletedToday: () => Task[]
 }
 
+const DEFAULT_LISTS: TaskList[] = [
+  { id: 'imp', title: 'IMP', order: 0 },
+  { id: 'fast', title: 'Fast', order: 1 },
+  { id: 'later', title: 'Later', order: 2 },
+]
+
 export const useTaskStore = create<TaskState>()(
   persist(
     (set, get) => ({
   tasks: [],
+  lists: DEFAULT_LISTS,
   isLoading: false,
   error: null,
 
@@ -188,6 +209,21 @@ export const useTaskStore = create<TaskState>()(
     await get().updateTask(id, updates)
   },
 
+  updateListTitle: (id, title) => {
+    set((state) => ({
+      lists: state.lists.map((l) => (l.id === id ? { ...l, title } : l)),
+    }))
+  },
+
+  addList: (title) => {
+    const newList: TaskList = {
+      id: crypto.randomUUID(),
+      title,
+      order: get().lists.length,
+    }
+    set((state) => ({ lists: [...state.lists, newList] }))
+  },
+
   addSubtask: async (taskId, title) => {
     const task = get().tasks.find((t) => t.id === taskId)
     if (!task) return
@@ -246,7 +282,7 @@ export const useTaskStore = create<TaskState>()(
 }),
   {
     name: 'obel-tasks',
-    partialize: (state) => ({ tasks: state.tasks }),
+    partialize: (state) => ({ tasks: state.tasks, lists: state.lists }),
   }
 )
 )

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useTaskStore, type Priority, type Task } from '@/stores/taskStore'
 import dayjs from 'dayjs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const priorityConfig: Record<Priority, { label: string; color: string; border: string }> = {
   urgent: { label: 'Urgent', color: 'text-red-500 bg-red-500/10', border: 'border-red-500/20' },
@@ -27,6 +28,7 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
   const addSubtask = useTaskStore((state) => state.addSubtask)
   const toggleSubtask = useTaskStore((state) => state.toggleSubtask)
   const deleteSubtask = useTaskStore((state) => state.deleteSubtask)
+  const lists = useTaskStore((state) => state.lists)
 
   if (!task) return null
 
@@ -79,6 +81,25 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
           <div className="p-6 sm:p-8 overflow-y-auto space-y-8">
             {/* Meta Details Row */}
             <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">List:</span>
+                <Select 
+                  value={task.listId || 'imp'} 
+                  onValueChange={(v) => updateTask(task.id, { listId: v || undefined })}
+                >
+                  <SelectTrigger className="h-8 min-w-[120px] bg-muted/50 border-border/50 rounded-lg text-xs font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border/50">
+                    {lists.map(l => (
+                      <SelectItem key={l.id} value={l.id} className="text-xs font-bold">
+                        {l.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {task.dueDate && (
                 <div className={`flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border ${
                   dayjs(task.dueDate).isBefore(dayjs(), 'day') && !isDone

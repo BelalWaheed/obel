@@ -6,8 +6,8 @@ import dayjs from 'dayjs'
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(dayjs())
 
-  const handlePrevMonth = () => setCurrentDate(currentDate.subtract(1, 'month'))
-  const handleNextMonth = () => setCurrentDate(currentDate.add(1, 'month'))
+  const handlePrevWeek = () => setCurrentDate(currentDate.subtract(1, 'week'))
+  const handleNextWeek = () => setCurrentDate(currentDate.add(1, 'week'))
   const handleToday = () => setCurrentDate(dayjs())
 
   return (
@@ -27,8 +27,8 @@ export default function CalendarPage() {
 
       <CalendarGrid 
         currentDate={currentDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
+        onPrevWeek={handlePrevWeek}
+        onNextWeek={handleNextWeek}
         onToday={handleToday}
       />
 

@@ -1,59 +1,52 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, CheckCircle2, Play, Loader2 } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { useTaskStore, type Priority, type Task } from '@/stores/taskStore'
+import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore } from '@/stores/timerStore'
 import { useNavigate } from 'react-router-dom'
 import { TaskFormModal } from '@/components/tasks/TaskFormModal'
 import { TaskDetailsModal } from '@/components/tasks/TaskDetailsModal'
-import { TaskFilters } from '@/components/tasks/TaskFilters'
-
-const priorityConfig: Record<Priority, { label: string; color: string; border: string }> = {
-  urgent: { label: 'Urgent', color: 'text-red-500 bg-red-500/10', border: 'border-red-500/20' },
-  high: { label: 'High', color: 'text-orange-500 bg-orange-500/10', border: 'border-orange-500/20' },
-  medium: { label: 'Medium', color: 'text-yellow-600 dark:text-yellow-500 bg-yellow-500/10', border: 'border-yellow-500/20' },
-  low: { label: 'Low', color: 'text-blue-500 bg-blue-500/10', border: 'border-blue-500/20' },
-}
+import { TaskListCard } from '@/components/tasks/TaskListCard'
 
 export default function TasksPage() {
   const navigate = useNavigate()
   const tasks = useTaskStore((state) => state.tasks)
+  const lists = useTaskStore((state) => state.lists)
   const isLoading = useTaskStore((state) => state.isLoading)
   const getFilteredTasks = useTaskStore((state) => state.getFilteredTasks)
-  const getAllTags = useTaskStore((state) => state.getAllTags)
-  const toggleComplete = useTaskStore((state) => state.toggleComplete)
+  const addList = useTaskStore((state) => state.addList)
 
   const setActiveTaskId = useTimerStore((state) => state.setActiveTaskId)
 
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterPriority, setFilterPriority] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus] = useState<string>('all')
+  const [filterPriority] = useState<string>('all')
+  const [searchQuery] = useState('')
 
   const [selectedTaskDetailsId, setSelectedTaskDetailsId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState<any>(null)
 
   const filteredTasks = useMemo(
     () => {
       let fTasks = getFilteredTasks(filterStatus, filterPriority, searchQuery)
-      // Exclude archived (done) tasks from the main list unless specifically filtered?
-      // Since we removed 'done' from filters, we just exclude them here.
-      if (filterStatus === 'all') {
-        fTasks = fTasks.filter(t => t.status !== 'done')
-      }
       return fTasks
     },
     [filterStatus, filterPriority, searchQuery, getFilteredTasks, tasks]
   ) 
   
+  const tasksByList = useMemo(() => {
+    const grouped: Record<string, typeof tasks> = {}
+    lists.forEach(list => {
+      grouped[list.id] = filteredTasks.filter(t => t.listId === list.id || (!t.listId && list.id === 'imp'))
+    })
+    return grouped
+  }, [filteredTasks, lists])
+
   const liveSelectedTask = useMemo(() => 
     selectedTaskDetailsId ? tasks.find(t => t.id === selectedTaskDetailsId) || null : null,
   [tasks, selectedTaskDetailsId])
 
-  const allTags = useMemo(() => getAllTags(), [tasks, getAllTags])
 
   const openCreateModal = () => {
     setEditingTask(null)
@@ -66,180 +59,66 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-10 max-w-5xl mx-auto pb-24">
+    <div className="space-y-6 max-w-5xl mx-auto pb-24 px-4 sm:px-6">
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
-        <div>
-          <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight bg-linear-to-br from-foreground to-muted-foreground bg-clip-text text-transparent pb-1">
-            Your Objectives
+        <div className="relative group">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute -left-4 top-0 bottom-0 w-1 bg-primary rounded-full" 
+          />
+          <h1 className="text-6xl lg:text-7xl font-black tracking-tight font-arabic bg-linear-to-br from-foreground via-foreground to-primary/40 bg-clip-text text-transparent pb-2 leading-tight">
+            استعن بالله
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg font-medium">
-            Plan your work, execute with focus, and achieve your goals.
-          </p>
         </div>
-        <Button 
-          onClick={openCreateModal} 
-          size="lg" 
-          className="gap-2 rounded-full px-6 shadow-xl shadow-primary/25 hover:scale-105 transition-all duration-300 group"
-        >
-          <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-          <span className="font-semibold text-base">New Task</span>
-        </Button>
       </div>
-
-      <TaskFilters 
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterPriority={filterPriority}
-        setFilterPriority={setFilterPriority}
-        allTags={allTags}
-      />
 
       {isLoading && (
         <div className="text-center py-20">
-          <Loader2 className="w-10 h-10 animate-spin mx-auto text-primary" />
-          <p className="text-sm font-medium text-muted-foreground mt-4">Syncing your objectives...</p>
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary/40" />
+          <p className="text-md font-bold text-muted-foreground mt-6 uppercase tracking-widest opacity-50">Syncing Workspace...</p>
         </div>
       )}
 
-      <div className="space-y-3 relative">
+      {/* List Cards Container */}
+      <div className="space-y-5 relative">
         <AnimatePresence mode="popLayout">
-          {!isLoading && filteredTasks.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center py-24 px-4 bg-card/30 backdrop-blur-xl rounded-[2.5rem] border border-border/40"
-            >
-              <div className="w-24 h-24 bg-linear-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-primary/5">
-                <CheckCircle2 className="w-12 h-12 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-2">You're all caught up</h3>
-              <p className="text-muted-foreground text-lg max-w-md mx-auto">Either you have no tasks here, or your filters are too specific. Take a break, or create a new objective.</p>
-              <Button onClick={openCreateModal} variant="outline" className="mt-8 rounded-full px-6 h-12 text-base font-semibold border-border/50">
-                Create a Task
-              </Button>
-            </motion.div>
+          {!isLoading && lists.length === 0 ? (
+             <motion.div
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="text-center py-24 px-4 bg-card/30 backdrop-blur-xl rounded-[3rem] border border-border/40"
+             >
+               <h3 className="text-2xl font-bold mb-2">No lists found</h3>
+               <Button onClick={() => addList('New List')} variant="outline" className="mt-8 rounded-full px-8 h-12">
+                 Create First List
+               </Button>
+             </motion.div>
           ) : (
-            filteredTasks.map((task, index) => {
-              const isDone = task.status === 'done'
-              const prioConf = priorityConfig[task.priority]
-              const totalSubtasks = task.subtasks?.length || 0
-              const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
-              const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
-
-              // Priority-specific ambient glow colors
-              const glowColors: Record<Priority, string> = {
-                urgent: 'shadow-red-500/10 dark:shadow-red-500/20',
-                high: 'shadow-orange-500/10 dark:shadow-orange-500/20',
-                medium: 'shadow-yellow-500/10 dark:shadow-yellow-500/20',
-                low: 'shadow-blue-500/10 dark:shadow-blue-500/20'
-              }
-
-              const priorityInitial = task.priority.charAt(0).toUpperCase()
-
-              return (
-                <motion.div
-                  key={task.id}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0, transition: { delay: index * 0.03 } }}
-                  exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.2 } }}
-                >
-                  <Card
-                    onClick={() => setSelectedTaskDetailsId(task.id)}
-                    className={`relative overflow-hidden cursor-pointer group transition-all duration-500 rounded-3xl border-border/40 ${
-                      isDone 
-                        ? 'opacity-60 bg-muted/5 border-transparent shadow-none' 
-                        : `bg-card/40 backdrop-blur-xl border-border/50 hover:border-primary/40 shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 ${glowColors[task.priority]}`
-                    }`}
-                  >
-                    {/* Glassmorphic Inner Shine */}
-                    {!isDone && (
-                      <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent dark:from-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                    )}
-
-                    {/* Priority Background Initial */}
-                    {!isDone && (
-                      <div className="absolute -right-2 -bottom-4 text-9xl font-black text-foreground/[0.03] dark:text-foreground/[0.02] italic pointer-events-none select-none transition-transform duration-500 group-hover:scale-110 group-hover:-translate-x-4">
-                        {priorityInitial}
-                      </div>
-                    )}
-                    
-                    <div className="p-5 flex items-center gap-5 relative z-10">
-                      {/* Checkbox circle */}
-                      <button
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (!isDone) {
-                            import('canvas-confetti').then((confetti) => {
-                              confetti.default({
-                                particleCount: 100,
-                                spread: 70,
-                                origin: { y: 0.6 },
-                                colors: ['#a855f7', '#ec4899', '#3b82f6']
-                              })
-                            })
-                          }
-                          toggleComplete(task.id) 
-                        }}
-                        className={`w-8 h-8 shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
-                          isDone 
-                            ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-lg shadow-primary/40' 
-                            : 'border-muted-foreground/30 hover:border-primary text-transparent hover:bg-primary/10'
-                        }`}
-                      >
-                        <CheckCircle2 className={`w-4.5 h-4.5 ${isDone ? 'opacity-100' : 'opacity-0'} transition-opacity`} strokeWidth={3} />
-                      </button>
-                      
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className="flex items-center gap-3">
-                          <h3 className={`font-bold text-xl tracking-tight transition-all duration-500 ${isDone ? 'line-through text-muted-foreground/60' : 'text-foreground group-hover:text-primary/90'}`}>
-                            {task.title}
-                          </h3>
-                        </div>
-                        {(!isDone && totalSubtasks > 0) && (
-                          <div className="flex items-center gap-3 mt-1.5">
-                            <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progressPercentage}%` }}
-                                className="h-full bg-primary/60"
-                              />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground/80">
-                              {completedSubtasks}/{totalSubtasks} STEPS
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <Badge variant="outline" className={`hidden sm:flex capitalize px-3 py-1 text-[10px] font-black tracking-widest rounded-full border shrink-0 transition-transform duration-500 group-hover:scale-105 ${prioConf.color} ${prioConf.border} ${isDone ? 'opacity-40 grayscale' : ''}`}>
-                         {prioConf.label}
-                      </Badge>
-                      
-                      {!isDone && (
-                        <Button
-                          onClick={(e) => { e.stopPropagation(); handleStartFocus(task.id) }}
-                          className="shrink-0 group/btn relative overflow-hidden bg-primary/10 text-primary hover:bg-primary dark:hover:text-black hover:text-white border border-primary/20 font-black uppercase tracking-widest text-[10px] rounded-2xl h-10 px-5 shadow-none hover:shadow-xl hover:shadow-primary/40 transition-all ml-3"
-                        >
-                          <Play className="w-3.5 h-3.5 relative z-10 transition-transform group-hover/btn:scale-125" />
-                          <span className="hidden sm:inline relative z-10">Focus</span>
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Bottom accent line for active tasks */}
-                    {!isDone && (
-                       <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-linear-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    )}
-                  </Card>
-                </motion.div>
-              )
-            })
+            lists.map((list) => (
+              <TaskListCard 
+                key={list.id}
+                listId={list.id}
+                title={list.title}
+                tasks={tasksByList[list.id] || []}
+                onTaskClick={(id) => setSelectedTaskDetailsId(id)}
+                onStartFocus={handleStartFocus}
+              />
+            ))
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="fixed bottom-24 right-5 flex flex-col gap-4 z-50">
+         <Button 
+            onClick={openCreateModal} 
+            size="lg" 
+            className="w-16 h-16 rounded-full shadow-2xl shadow-primary/40 hover:scale-110 active:scale-95 transition-all duration-300 p-0"
+          >
+            <Plus className="w-8 h-8" strokeWidth={3} />
+          </Button>
       </div>
 
       <TaskDetailsModal 

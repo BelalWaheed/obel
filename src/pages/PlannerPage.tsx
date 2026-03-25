@@ -115,25 +115,12 @@ export default function PlannerPage() {
               key={task.id}
               draggable
               onDragStart={(e: any) => handleDragStart(e, task.id)}
-              whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-              className={`bg-card/60 backdrop-blur-md border border-border/50 rounded-2xl p-4 cursor-grab active:cursor-grabbing hover:shadow-2xl transition-all group flex items-start gap-3 ${
-                task.priority === 'urgent' ? 'hover:border-red-500/30 hover:shadow-red-500/5' :
-                task.priority === 'high' ? 'hover:border-orange-500/30 hover:shadow-orange-500/5' :
-                task.priority === 'medium' ? 'hover:border-yellow-500/30 hover:shadow-yellow-500/5' :
-                'hover:border-blue-500/30 hover:shadow-blue-500/5'
-              }`}
+              className="bg-card border border-border rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group flex items-start gap-2"
             >
-              <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
-                <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary transition-colors" />
-                <div className={`w-1 h-4 rounded-full ${
-                  task.priority === 'urgent' ? 'bg-red-500' :
-                  task.priority === 'high' ? 'bg-orange-500' :
-                  task.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
-                }`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold leading-tight mb-2 group-hover:text-primary transition-colors">{task.title}</p>
-                <Badge variant="outline" className="text-[9px] font-black tracking-widest px-2 py-0 h-4 uppercase border-muted-foreground/20">
+              <GripVertical className="w-4 h-4 text-muted-foreground/30 mt-0.5 group-hover:text-primary transition-colors shrink-0" />
+              <div>
+                <p className="text-sm font-medium leading-tight mb-1">{task.title}</p>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase">
                   {task.priority}
                 </Badge>
               </div>
@@ -142,29 +129,29 @@ export default function PlannerPage() {
         </div>
       </Card>
 
-      <Card className={`flex-1 flex-col overflow-hidden border-border/40 bg-card/20 backdrop-blur-3xl rounded-[2.5rem] ${mobileTab === 'timeline' ? 'flex' : 'hidden md:flex'}`}>
+      <Card className={`flex-1 flex-col overflow-hidden border-border/50 ${mobileTab === 'timeline' ? 'flex' : 'hidden md:flex'}`}>
         <div 
           ref={timelineRef}
-          className="flex-1 overflow-y-auto p-4 md:p-8 bg-linear-to-b from-muted/5 to-background scroll-smooth"
+          className="flex-1 overflow-y-auto p-4 md:p-6 bg-linear-to-b from-muted/5 to-background scroll-smooth"
         >
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="space-y-4 max-w-3xl mx-auto">
             {HOURS.map((hour) => {
               const hourTasks = scheduledTasks.get(hour) || []
               const isCurrentHour = dayjs().hour() === hour
 
               return (
-                <div key={hour} id={`hour-${hour}`} className="flex gap-8 relative group">
-                  <div className="w-20 text-right shrink-0 pt-4">
-                    <span className={`text-[10px] font-black tracking-widest uppercase transition-colors duration-500 ${isCurrentHour ? 'text-primary' : 'text-muted-foreground/30 group-hover:text-muted-foreground/60'}`}>
-                      {dayjs().hour(hour).minute(0).format('H:00')}
+                <div key={hour} id={`hour-${hour}`} className="flex gap-6 relative group">
+                  <div className="w-20 text-right shrink-0 pt-3">
+                    <span className={`text-xs font-black tracking-tighter uppercase ${isCurrentHour ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                      {dayjs().hour(hour).minute(0).format('ha')}
                     </span>
                   </div>
                   
                   <div
-                    className={`flex-1 min-h-20 rounded-[2rem] border-2 transition-all duration-500 relative p-4 flex flex-col gap-4 ${
+                    className={`flex-1 min-h-20 rounded-2xl border-2 transition-all duration-300 relative p-3 flex flex-col gap-3 ${
                       isCurrentHour 
-                        ? 'bg-primary/5 border-primary/20 shadow-[0_0_40px_-10px_rgba(var(--primary),0.15)] ring-1 ring-primary/10' 
-                        : 'bg-card/20 border-border/30 hover:border-primary/20 hover:bg-card/40'
+                        ? 'bg-primary/5 border-primary/30 shadow-[0_0_20px_-5px_rgba(var(--primary),0.1)]' 
+                        : 'bg-card/30 border-dashed border-border/50 hover:border-primary/20 hover:bg-card/50'
                     }`}
                     onDrop={(e) => handleDrop(e, hour)}
                     onDragOver={handleDragOver}
@@ -172,10 +159,10 @@ export default function PlannerPage() {
                     {isCurrentHour && (
                       <motion.div 
                         layoutId="current-hour-indicator"
-                        className="absolute -left-15 top-1/2 -translate-y-1/2 flex items-center gap-3"
+                        className="absolute -left-13 top-1/2 -translate-y-1/2 flex items-center gap-2"
                       >
-                        <div className="w-4 h-4 rounded-full bg-primary ring-8 ring-primary/10 animate-pulse" />
-                        <div className="h-px w-8 bg-linear-to-r from-primary to-transparent opacity-50" />
+                        <div className="w-3 h-3 rounded-full bg-primary ring-4 ring-primary/20 animate-pulse" />
+                        <div className="h-[2px] w-6 bg-linear-to-r from-primary to-transparent" />
                       </motion.div>
                     )}
 
@@ -185,28 +172,20 @@ export default function PlannerPage() {
                         key={task.id}
                         draggable
                         onDragStart={(e: any) => handleDragStart(e, task.id)}
-                        whileHover={{ scale: 1.01, x: 5, transition: { duration: 0.2 } }}
-                        className={`bg-card/80 backdrop-blur-2xl border border-border/50 rounded-2xl p-5 cursor-grab active:cursor-grabbing hover:shadow-2xl transition-all flex items-center justify-between group overflow-hidden relative ${
-                          task.priority === 'urgent' ? 'shadow-red-500/5 hover:border-red-500/30' :
-                          task.priority === 'high' ? 'shadow-orange-500/5 hover:border-orange-500/30' :
-                          task.priority === 'medium' ? 'shadow-yellow-500/5 hover:border-yellow-500/30' :
-                          'shadow-blue-500/5 hover:border-blue-500/30'
-                        }`}
+                        whileHover={{ scale: 1.01, x: 4 }}
+                        className="bg-background/80 backdrop-blur-md border border-border/50 rounded-xl p-4 cursor-grab active:cursor-grabbing hover:shadow-xl hover:shadow-primary/5 transition-all flex items-center justify-between group"
                       >
-                         <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none" />
-                        
-                        <div className="flex items-center gap-4 relative z-10">
-                          <div className={`w-1.5 h-10 rounded-full transition-all duration-300 group-hover:scale-y-110 ${
-                            task.priority === 'urgent' ? 'bg-red-500 shadow-lg shadow-red-500/40' :
-                            task.priority === 'high' ? 'bg-orange-500 shadow-lg shadow-orange-500/40' :
-                            task.priority === 'medium' ? 'bg-yellow-500 shadow-lg shadow-yellow-500/40' : 'bg-blue-500 shadow-lg shadow-blue-500/40'
+                        <div className="flex items-center gap-3">
+                          <div className={`w-1 h-8 rounded-full ${
+                            task.priority === 'urgent' ? 'bg-red-500' :
+                            task.priority === 'high' ? 'bg-orange-500' :
+                            task.priority === 'medium' ? 'bg-blue-500' : 'bg-slate-400'
                           }`} />
                           <div>
-                            <p className="text-base font-bold tracking-tight group-hover:text-primary transition-colors">{task.title}</p>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">{task.priority}</span>
+                            <p className="text-sm font-bold tracking-tight">{task.title}</p>
                           </div>
                         </div>
-                        <GripVertical className="w-5 h-5 text-muted-foreground/10 group-hover:text-primary transition-colors shrink-0 relative z-10" />
+                        <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary transition-colors shrink-0" />
                       </motion.div>
                     ))}
                   </div>
