@@ -120,6 +120,13 @@
     body {
         @apply bg-background text-foreground antialiased relative;
         overflow-x: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    input, textarea {
+        user-select: text;
+        -webkit-user-select: text;
     }
 
     body::before {

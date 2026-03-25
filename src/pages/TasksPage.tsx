@@ -59,7 +59,7 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto ">
+    <div className="space-y-6 max-w-[100vw] sm:max-w-none px-2 sm:px-6">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
         <div className="relative group">
@@ -81,14 +81,14 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* List Cards Container */}
-      <div className="space-y-5 relative">
+      {/* List Cards Board / Container */}
+      <div className="flex flex-col md:flex-row md:items-start md:overflow-x-auto md:pb-8 md:gap-6 min-h-[calc(100vh-250px)] custom-scrollbar px-1">
         <AnimatePresence mode="popLayout">
           {!isLoading && lists.length === 0 ? (
              <motion.div
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
-               className="text-center py-24 px-4 bg-card/30 backdrop-blur-xl rounded-[3rem] border border-border/40"
+               className="text-center py-24 px-4 bg-card/30 backdrop-blur-xl rounded-[3rem] border border-border/40 w-full"
              >
                <h3 className="text-2xl font-bold mb-2">No lists found</h3>
                <Button onClick={() => addList('New List')} variant="outline" className="mt-8 rounded-full px-8 h-12">

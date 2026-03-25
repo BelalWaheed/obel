@@ -60,7 +60,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
     const tags = formTags.split(',').map((t) => t.trim()).filter(Boolean)
 
     if (editingTask) {
-      await updateTask(editingTask.id, {
+      updateTask(editingTask.id, {
         title: formTitle,
         description: formDescription,
         priority: formPriority,
@@ -71,7 +71,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
         listId: formListId || undefined,
       })
     } else {
-      await addTask({
+      addTask({
         title: formTitle,
         description: formDescription,
         priority: formPriority,

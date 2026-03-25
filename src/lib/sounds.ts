@@ -14,168 +14,120 @@ class SoundSystem {
   }
 
   /**
-   * Play a pleasant "Chime" sound (Timer Complete)
+   * Helper to play a multi-layered, premium "Soft Bell" tone
    */
-  async playChime() {
+  private async playSoftBell(
+    freq: number, 
+    duration: number = 0.5, 
+    volume: number = 0.1, 
+    harmonics: number[] = [1, 2, 3, 4.2]
+  ) {
     const ctx = this.getContext();
     if (ctx.state === 'suspended') await ctx.resume();
-
     const now = ctx.currentTime;
+
+    // Create a master bus for this sound with a low-pass filter for warmth
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(4000, now);
+    filter.Q.setValueAtTime(0.7, now);
+    filter.connect(ctx.destination);
+
+    const masterGain = ctx.createGain();
+    masterGain.connect(filter);
     
-    // Create a multi-oscillator chime for richness
-    const frequencies = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-    
-    frequencies.forEach((freq, index) => {
+    // Global Envelope
+    masterGain.gain.setValueAtTime(0, now);
+    masterGain.gain.linearRampToValueAtTime(volume, now + 0.02);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    harmonics.forEach((h, index) => {
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const g = ctx.createGain();
       
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
+      osc.type = index === 0 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(freq * h, now);
       
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.5 + index * 0.2);
+      // Weaker harmonics for richness without dominance
+      g.gain.setValueAtTime(1 / (index + 1), now);
       
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      osc.connect(g);
+      g.connect(masterGain);
       
       osc.start(now);
-      osc.stop(now + 2);
+      osc.stop(now + duration);
     });
   }
 
   /**
-   * Play a satisfying "Pop/Ding" (Task Complete)
+   * Play the celestial, user-provided "Chime" (Timer Complete)
    */
-  async playSuccess() {
-    const ctx = this.getContext();
-    if (ctx.state === 'suspended') await ctx.resume();
-
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    // Pentatonic jump for success feel
-    osc.frequency.setValueAtTime(880, now); // A5
-    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.1); // E6
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.5);
+  async playChime() {
+    try {
+      // Using a standard Audio element for the public MP3 file
+      const audio = new Audio('/finish-session.mp3');
+      audio.volume = 0.5;
+      await audio.play();
+    } catch (error) {
+      console.error('Failed to play custom chime:', error);
+      // Fallback to stylized synthesis if file fails
+      const baseFreqs = [523.25, 659.25, 783.99, 1046.50]; 
+      baseFreqs.forEach((f, i) => {
+        setTimeout(() => this.playSoftBell(f, 2.5, 0.08, [1, 2.01, 3.02]), i * 150);
+      });
+    }
   }
 
   /**
-   * Play a subtle "Click" (Interaction)
+   * Play a satisfying task success "Ding"
+   */
+  async playSuccess() {
+    await this.playSoftBell(880, 0.6, 0.15, [1, 1.5, 2]);
+  }
+
+  /**
+   * Play a subtle interaction "Click"
    */
   async playClick() {
     const ctx = this.getContext();
-    if (ctx.state === 'suspended') await ctx.resume();
-
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
+    
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
-
-    gain.gain.setValueAtTime(0.1, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
-
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(100, now + 0.04);
+    
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+    
     osc.connect(gain);
     gain.connect(ctx.destination);
-
     osc.start(now);
-    osc.stop(now + 0.05);
+    osc.stop(now + 0.04);
   }
 
   /**
-   * Play a pleasant "Rising" sound (Start Timer/Session)
+   * Play a professional "Start Focus" sparkle
    */
   async playStart() {
-    const ctx = this.getContext();
-    if (ctx.state === 'suspended') await ctx.resume();
-
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, now); // A4
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.3);
+    await this.playSoftBell(1320, 0.4, 0.1, [1, 2, 3]); // High E6
   }
 
   /**
-   * Play a neutral "Descending" sound (Pause Timer/Session)
+   * Play a warm "Pause" tone
    */
   async playPause() {
-    const ctx = this.getContext();
-    if (ctx.state === 'suspended') await ctx.resume();
-
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(660, now); // E5
-    osc.frequency.exponentialRampToValueAtTime(440, now + 0.15); // A4
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.3);
+    await this.playSoftBell(440, 0.4, 0.08, [1, 1.25]); // A4
   }
 
   /**
    * Play a celebratory "Triple-Jump" sound (Habit Complete)
    */
   async playHabitCheck() {
-    const ctx = this.getContext();
-    if (ctx.state === 'suspended') await ctx.resume();
-
-    const frequencies = [659.25, 783.99, 1046.50]; // E5, G5, C6
-    const now = ctx.currentTime;
-
-    frequencies.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      const startTime = now + i * 0.08;
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, startTime);
-      
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.3);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start(startTime);
-      osc.stop(startTime + 0.4);
+    const freqs = [659.25, 783.99, 1046.50];
+    freqs.forEach((f, i) => {
+      setTimeout(() => this.playSoftBell(f, 0.5, 0.1), i * 100);
     });
   }
 

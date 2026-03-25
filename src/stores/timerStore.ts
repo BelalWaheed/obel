@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { useAuthStore } from './authStore'
 import { useTaskStore } from './taskStore'
 
-export type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
+export type TimerMode = 'focus' | 'shortBreak' | 'longBreak' | 'coffeeBreak'
 
 export interface PomodoroSettings {
   focusDuration: number
@@ -29,6 +29,7 @@ interface TimerState {
   isRunning: boolean
   mode: TimerMode
   sessionsCompleted: number
+  expectedEndTime: number | null // Timestamp in ms
 
   // Settings
   settings: PomodoroSettings
@@ -74,6 +75,7 @@ export const useTimerStore = create<TimerState>()(
   persist(
     (set, get) => ({
       timeRemaining: 25 * 60,
+      expectedEndTime: null,
       isRunning: false,
       mode: 'focus',
       sessionsCompleted: 0,
@@ -92,44 +94,62 @@ export const useTimerStore = create<TimerState>()(
 
       setMode: (mode) => {
         const { settings } = get()
-        set({
-          mode,
-          timeRemaining:
+        const duration = 
             mode === 'focus'
               ? settings.focusDuration * 60
               : mode === 'shortBreak'
               ? settings.shortBreakDuration * 60
-              : settings.longBreakDuration * 60,
+              : mode === 'coffeeBreak'
+              ? 5 * 60 // Default coffee break duration
+              : settings.longBreakDuration * 60
+
+        set({
+          mode,
+          timeRemaining: duration,
+          expectedEndTime: null,
           isRunning: false,
         })
+        stopGlobalTick()
       },
 
       start: (taskId) => {
         if (get().isRunning) return
+        
+        const now = Date.now()
+        const endTime = now + (get().timeRemaining * 1000)
 
-        set({ isRunning: true, activeTaskId: taskId !== undefined ? taskId : get().activeTaskId })
+        set({ 
+          isRunning: true, 
+          expectedEndTime: endTime,
+          activeTaskId: taskId !== undefined ? taskId : get().activeTaskId 
+        })
 
-        // Create a global interval if one doesn't exist
-        if (!globalTimerInterval) {
-          startGlobalTick()
-        }
+        startGlobalTick()
       },
 
       pause: () => {
-        set({ isRunning: false })
+        set({ isRunning: false, expectedEndTime: null })
+        stopGlobalTick()
       },
 
       reset: () => {
-        set((state) => ({
+        const { mode, settings } = get()
+        const duration = 
+            mode === 'focus'
+              ? settings.focusDuration * 60
+              : mode === 'shortBreak'
+              ? settings.shortBreakDuration * 60
+              : mode === 'coffeeBreak'
+              ? 5 * 60 
+              : settings.longBreakDuration * 60
+
+        set({
           isRunning: false,
-          timeRemaining:
-            state.mode === 'focus'
-              ? state.settings.focusDuration * 60
-              : state.mode === 'shortBreak'
-              ? state.settings.shortBreakDuration * 60
-              : state.settings.longBreakDuration * 60,
+          expectedEndTime: null,
+          timeRemaining: duration,
           activeTaskId: null,
-        }))
+        })
+        stopGlobalTick()
       },
 
       skip: () => {
@@ -141,22 +161,34 @@ export const useTimerStore = create<TimerState>()(
         } else {
           nextMode = 'focus'
         }
-        set({
-          mode: nextMode,
-          timeRemaining:
+        
+        const duration = 
             nextMode === 'focus'
               ? settings.focusDuration * 60
               : nextMode === 'shortBreak'
               ? settings.shortBreakDuration * 60
-              : settings.longBreakDuration * 60,
+              : settings.longBreakDuration * 60
+
+        set({
+          mode: nextMode,
+          timeRemaining: duration,
+          expectedEndTime: null,
           isRunning: false,
-          activeTaskId: null, // Clear active task on skip
+          activeTaskId: null,
         })
+        stopGlobalTick()
       },
 
       tick: () => {
-        const { timeRemaining, mode, settings, sessionsCompleted, activeTaskId } = get()
-        if (timeRemaining <= 0) {
+        const { expectedEndTime, isRunning, mode, settings, sessionsCompleted, activeTaskId } = get()
+        if (!isRunning || !expectedEndTime) return
+
+        const now = Date.now()
+        const remaining = Math.max(0, Math.ceil((expectedEndTime - now) / 1000))
+        
+        set({ timeRemaining: remaining })
+
+        if (remaining <= 0) {
           // Natural completion
           stopGlobalTick()
 
@@ -165,83 +197,78 @@ export const useTimerStore = create<TimerState>()(
               ? settings.focusDuration * 60
               : mode === 'shortBreak'
               ? settings.shortBreakDuration * 60
+              : mode === 'coffeeBreak'
+              ? Math.round((expectedEndTime - (expectedEndTime - (get().timeRemaining * 1000))) / 1000) // This is edge casey
               : settings.longBreakDuration * 60
+
+          const finalDuration = mode === 'coffeeBreak' ? 5 * 60 : duration // Simplification for history
 
           // If a focus session completed, update the task
           if (mode === 'focus' && activeTaskId) {
             useTaskStore.getState().updateTask(activeTaskId, {
-              // Need to get the latest task state first
               focusSessions: (useTaskStore.getState().tasks.find((t) => t.id === activeTaskId)?.focusSessions || 0) + 1,
-              focusTime: (useTaskStore.getState().tasks.find((t) => t.id === activeTaskId)?.focusTime || 0) + duration,
+              focusTime: (useTaskStore.getState().tasks.find((t) => t.id === activeTaskId)?.focusTime || 0) + finalDuration,
             })
           }
 
           const newHistoryItem: SessionHistory = {
             mode,
-            duration,
+            duration: finalDuration,
             completedAt: new Date().toISOString(),
           }
 
-          let nextMode: TimerMode
+          let nextMode: TimerMode = 'focus'
           let newSessionsCompleted = sessionsCompleted
 
           if (mode === 'focus') {
             newSessionsCompleted = sessionsCompleted + 1
-            nextMode =
-              newSessionsCompleted % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak'
+            nextMode = newSessionsCompleted % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak'
+          } else if (mode === 'coffeeBreak') {
+            nextMode = 'focus'
           } else {
             nextMode = 'focus'
           }
 
           const shouldAutoStart =
             (nextMode === 'focus' && settings.autoStartFocus) ||
-            (nextMode !== 'focus' && settings.autoStartBreaks)
+            (nextMode !== 'focus' && (nextMode as string) !== 'coffeeBreak' && settings.autoStartBreaks)
+
+          const nextDuration = 
+            nextMode === 'focus'
+              ? settings.focusDuration * 60
+              : nextMode === 'shortBreak'
+              ? settings.shortBreakDuration * 60
+              : settings.longBreakDuration * 60
 
           set({
             mode: nextMode,
-            timeRemaining:
-              nextMode === 'focus'
-                ? settings.focusDuration * 60
-                : nextMode === 'shortBreak'
-                ? settings.shortBreakDuration * 60
-                : settings.longBreakDuration * 60,
+            timeRemaining: nextDuration,
             isRunning: shouldAutoStart,
+            expectedEndTime: shouldAutoStart ? Date.now() + (nextDuration * 1000) : null,
             sessionsCompleted: newSessionsCompleted,
             sessionHistory: [...get().sessionHistory, newHistoryItem],
-            activeTaskId: nextMode === 'focus' ? activeTaskId : null, // Clear active task if not starting a new focus session
+            activeTaskId: nextMode === 'focus' ? activeTaskId : null,
           })
 
-          // Save to API after session complete
           get().saveToUser()
 
-          // XP Gain: 2 XP per minute of focus
           if (mode === 'focus') {
-            const mins = duration / 60
-            const xp = Math.round(mins * 2)
-            import('@/stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().addXP(xp))
+            const xp = Math.round((finalDuration / 60) * 2)
+            useAuthStore.getState().addXP(xp)
           }
 
-          // Sound and Notification triggers
           if (settings.soundEnabled) {
             import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playChime())
           }
           if (settings.notificationsEnabled) {
             import('@/lib/notifications').then(({ notificationSystem }) => {
-              const title = nextMode === 'focus' ? 'Break Over!' : 'Focus Session Complete!'
-              const body = nextMode === 'focus' ? 'Time to get back to work.' : 'Great job! Take a well-deserved break.'
-              notificationSystem.send(title, { body })
+              const title = nextMode === 'focus' ? 'Break Over!' : 'Session Complete!'
+              notificationSystem.send(title, { body: 'Time to switch modes.' })
             })
           }
 
-          if (shouldAutoStart) {
-            startGlobalTick()
-          } else {
-            stopGlobalTick()
-          }
-          return
+          if (shouldAutoStart) startGlobalTick()
         }
-
-        set({ timeRemaining: timeRemaining - 1 })
       },
 
       updateSettings: async (newSettings) => {
@@ -249,7 +276,6 @@ export const useTimerStore = create<TimerState>()(
         const merged = { ...settings, ...newSettings }
         const updates: Partial<TimerState> = { settings: merged }
 
-        // If timer is not running, update the display
         if (!isRunning) {
           updates.timeRemaining =
             mode === 'focus'
@@ -265,7 +291,6 @@ export const useTimerStore = create<TimerState>()(
 
       setActiveTaskId: (taskId) => set({ activeTaskId: taskId }),
 
-      // Load settings & session history from the user's API record
       loadFromUser: async () => {
         const user = useAuthStore.getState().user
         if (!user) return
@@ -294,19 +319,15 @@ export const useTimerStore = create<TimerState>()(
         }
       },
 
-      // Persist settings + sessions to the user's API record
       saveToUser: async () => {
         const { settings, sessionHistory } = get()
         const user = useAuthStore.getState().user
         if (!user) return
 
-        // Calculate total focus hours
         const totalFocusSeconds = sessionHistory
           .filter((s) => s.mode === 'focus')
           .reduce((acc, s) => acc + s.duration, 0)
         const totalFocusHours = (totalFocusSeconds / 3600).toFixed(1)
-
-        // Only keep last 100 sessions to avoid huge payload
         const recentHistory = sessionHistory.slice(-100)
 
         await useAuthStore.getState().updateUser({
@@ -325,12 +346,12 @@ export const useTimerStore = create<TimerState>()(
         timeRemaining: state.timeRemaining,
         mode: state.mode,
         activeTaskId: state.activeTaskId,
+        expectedEndTime: state.expectedEndTime,
       }),
     }
   )
 )
 
-// Auto-start global tick if the store loads with isRunning true
 if (useTimerStore.getState().isRunning) {
   startGlobalTick()
 }

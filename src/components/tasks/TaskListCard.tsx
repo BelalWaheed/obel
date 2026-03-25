@@ -37,7 +37,7 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
   }
 
   return (
-    <Card className="bg-card/40 backdrop-blur-xl border-border/40 overflow-hidden rounded-[2rem]">
+    <Card className="bg-card/40 backdrop-blur-xl border-border/40 overflow-hidden rounded-[2rem] md:w-[320px] lg:w-[350px] md:shrink-0 flex flex-col max-h-[calc(100vh-270px)] md:max-h-none h-fit">
       {/* Header */}
       <div 
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/10 transition-colors group"

@@ -1,14 +1,50 @@
 <!doctype html>
 <html lang="en" class="dark">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Obel — Your productivity companion. Manage tasks, track focus sessions, and build better habits." />
-    <title>Obel</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <link rel="icon" type="image/jpeg" href="/obel.jpg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- Primary SEO -->
+    <title>Obel — Studio Focus & Productivity</title>
+    <meta name="description" content="Obel is a premium, Onyx-inspired productivity tool. Elevate your focus with a task manager, pomodoro timer, and habit tracker designed for high performers." />
+    <meta name="keywords" content="productivity, focus, pomodoro timer, habit tracker, task management, kanban board, onyx design, studio focus" />
+    <meta name="theme-color" content="#100d12" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Obel — Studio Focus & Productivity" />
+    <meta property="og:description" content="Elevate your focus with Obel. Premium task management and productivity tools." />
+    <meta property="og:image" content="/obel.jpg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Obel — Studio Focus & Productivity" />
+    <meta name="twitter:description" content="Elevate your focus with Obel. Premium task management and productivity tools." />
+    <meta name="twitter:image" content="/obel.jpg" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Obel Focus",
+        "operatingSystem": "Web",
+        "applicationCategory": "ProductivityApplication",
+        "description": "Premium productivity and focus application featuring tasks, pomodoro, and habits.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

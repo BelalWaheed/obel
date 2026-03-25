@@ -31,10 +31,13 @@ import {
 import { useTimerStore, type TimerMode } from '@/stores/timerStore'
 import { useTaskStore } from '@/stores/taskStore'
 
+import { CoffeeBreakTimer } from '@/components/pomodoro/CoffeeBreakTimer'
+
 const modeConfig: Record<TimerMode, { label: string; color: string; bgColor: string; icon: typeof Timer }> = {
   focus: { label: 'Focus Time', color: 'text-primary', bgColor: 'bg-primary/10', icon: Zap },
   shortBreak: { label: 'Short Break', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', icon: Coffee },
   longBreak: { label: 'Long Break', color: 'text-blue-500', bgColor: 'bg-blue-500/10', icon: Coffee },
+  coffeeBreak: { label: 'Coffee Break', color: 'text-orange-500', bgColor: 'bg-orange-500/10', icon: Coffee },
 }
 
 const focusPresets = [15, 20, 25, 30, 40, 45, 60]
@@ -51,6 +54,7 @@ export default function PomodoroPage() {
   const pause = useTimerStore((s) => s.pause)
   const reset = useTimerStore((s) => s.reset)
   const skip = useTimerStore((s) => s.skip)
+  const setMode = useTimerStore((s) => s.setMode)
   const updateSettings = useTimerStore((s) => s.updateSettings)
   const setActiveTaskId = useTimerStore((s) => s.setActiveTaskId)
 
@@ -75,7 +79,10 @@ export default function PomodoroPage() {
       ? settings.focusDuration * 60
       : mode === 'shortBreak'
       ? settings.shortBreakDuration * 60
+      : mode === 'coffeeBreak'
+      ? 5 * 60 // Base for selector
       : settings.longBreakDuration * 60
+
   const progress = ((totalDuration - timeRemaining) / totalDuration) * 100
   const config = modeConfig[mode]
   const ModeIcon = config.icon
@@ -89,6 +96,14 @@ export default function PomodoroPage() {
     () => Math.round(todaySessions.filter((s) => s.mode === 'focus').reduce((a, s) => a + s.duration, 0) / 60),
     [todaySessions]
   )
+
+  const coffeeStats = useMemo(() => {
+    const coffeeSessions = todaySessions.filter(s => s.mode === 'coffeeBreak')
+    return {
+      count: coffeeSessions.length,
+      minutes: Math.round(coffeeSessions.reduce((a, s) => a + s.duration, 0) / 60)
+    }
+  }, [todaySessions])
 
   const handleSaveSettings = () => {
     updateSettings({
@@ -118,15 +133,7 @@ export default function PomodoroPage() {
 
   const handleModeSwitch = (m: TimerMode) => {
     if (!isRunning) {
-      useTimerStore.setState({
-        mode: m,
-        timeRemaining:
-          m === 'focus'
-            ? settings.focusDuration * 60
-            : m === 'shortBreak'
-            ? settings.shortBreakDuration * 60
-            : settings.longBreakDuration * 60,
-      })
+      setMode(m)
     }
   }
 
@@ -137,12 +144,12 @@ export default function PomodoroPage() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Pomodoro Timer</h1>
-        <p className="text-muted-foreground mt-1">Stay focused, take breaks, and accomplish more.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Stay Focused</h1>
+        <p className="text-muted-foreground mt-1 text-balance">Work hard, recharge deep. Your productivity sanctuary.</p>
       </div>
 
       {/* Mode Selector */}
-      <div className="flex justify-center gap-2">
+      <div className="flex justify-center flex-wrap gap-2">
         {(Object.entries(modeConfig) as [TimerMode, typeof config][]).map(([m, c]) => {
           const Icon = c.icon
           return (
@@ -150,7 +157,7 @@ export default function PomodoroPage() {
               key={m}
               variant={mode === m ? 'default' : 'outline'}
               size="sm"
-              className="gap-1.5"
+              className={`gap-1.5 transition-all ${mode === m ? 'shadow-lg shadow-primary/25 scale-105' : ''}`}
               onClick={() => handleModeSwitch(m)}
               disabled={isRunning}
             >
@@ -161,65 +168,72 @@ export default function PomodoroPage() {
         })}
       </div>
 
-      {/* Timer */}
-      <div className="flex justify-center">
-        <div className="relative w-[340px] h-[340px]">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 320 320">
-            <circle cx="160" cy="160" r={radius} fill="none" stroke="currentColor" className="text-muted/30" strokeWidth="6" />
-            <motion.circle
-              cx="160" cy="160" r={radius} fill="none" stroke="currentColor"
-              className={config.color} strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={circumference}
-              animate={{ strokeDashoffset }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
-            />
-          </svg>
+      {/* Timer View Conditional */}
+      {mode === 'coffeeBreak' ? (
+        <CoffeeBreakTimer />
+      ) : (
+        <>
+          {/* Standard Timer */}
+          <div className="flex justify-center">
+            <div className="relative w-[340px] h-[340px]">
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 320 320">
+                <circle cx="160" cy="160" r={radius} fill="none" stroke="currentColor" className="text-muted/30" strokeWidth="6" />
+                <motion.circle
+                  cx="160" cy="160" r={radius} fill="none" stroke="currentColor"
+                  className={config.color} strokeWidth="6" strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  animate={{ strokeDashoffset }}
+                  transition={{ duration: 0.5, ease: 'easeInOut' }}
+                />
+              </svg>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <motion.div
-              className={`p-3 rounded-2xl ${config.bgColor} mb-4`}
-              animate={{ scale: isRunning ? [1, 1.05, 1] : 1 }}
-              transition={{ repeat: isRunning ? Infinity : 0, duration: 2 }}
-            >
-              <ModeIcon className={`w-6 h-6 ${config.color}`} />
-            </motion.div>
-            <div className="text-6xl font-bold tracking-tighter tabular-nums">
-              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-            </div>
-            <p className={`text-sm font-medium mt-2 ${config.color}`}>{config.label}</p>
-            {activeTask && (
-              <div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-background/50 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground max-w-[200px]">
-                <Link2 className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate font-medium">{activeTask.title}</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <motion.div
+                  className={`p-3 rounded-2xl ${config.bgColor} mb-4`}
+                  animate={{ scale: isRunning ? [1, 1.05, 1] : 1 }}
+                  transition={{ repeat: isRunning ? Infinity : 0, duration: 2 }}
+                >
+                  <ModeIcon className={`w-6 h-6 ${config.color}`} />
+                </motion.div>
+                <div className="text-6xl font-bold tracking-tighter tabular-nums">
+                  {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                </div>
+                <p className={`text-sm font-medium mt-2 ${config.color}`}>{config.label}</p>
+                {activeTask && (
+                  <div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-background/50 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground max-w-[200px]">
+                    <Link2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate font-medium">{activeTask.title}</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Controls */}
-      <div className="flex justify-center items-center gap-3">
-        <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={reset} title="Reset">
-          <RotateCcw className="w-5 h-5" />
-        </Button>
-        <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={() => {
-          if (isRunning) {
-            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playPause());
-            pause();
-          } else {
-            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playStart());
-            start();
-          }
-        }}>
-          {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-        </Button>
-        <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={skip} title="Skip">
-          <SkipForward className="w-5 h-5" />
-        </Button>
-        <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={openSettings} title="Settings">
-          <Settings2 className="w-5 h-5" />
-        </Button>
-      </div>
+          {/* Controls */}
+          <div className="flex justify-center items-center gap-3">
+            <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={reset} title="Reset">
+              <RotateCcw className="w-5 h-5" />
+            </Button>
+            <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={() => {
+              if (isRunning) {
+                import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playPause());
+                pause();
+              } else {
+                import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playStart());
+                start();
+              }
+            }}>
+              {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+            </Button>
+            <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={skip} title="Skip">
+              <SkipForward className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={openSettings} title="Settings">
+              <Settings2 className="w-5 h-5" />
+            </Button>
+          </div>
+        </>
+      )}
 
       {/* Link Task */}
       <div className="flex justify-center">
@@ -239,19 +253,23 @@ export default function PomodoroPage() {
         </Select>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-        <Card className="p-4 text-center">
+      {/* Stats Table */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+        <Card className="p-4 text-center bg-card shadow-sm border-border/60">
           <p className="text-2xl font-bold">{sessionsCompleted}</p>
-          <p className="text-sm text-muted-foreground">Sessions Completed</p>
+          <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Total Sessions</p>
         </Card>
-        <Card className="p-4 text-center">
+        <Card className="p-4 text-center bg-card shadow-sm border-border/60">
           <p className="text-2xl font-bold">{todayFocusMinutes}</p>
-          <p className="text-sm text-muted-foreground">Focus Minutes Today</p>
+          <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Focus Mins Today</p>
         </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold">{todaySessions.filter((s) => s.mode === 'focus').length}</p>
-          <p className="text-sm text-muted-foreground">Sessions Today</p>
+        <Card className="p-4 text-center bg-card shadow-sm border-border/60">
+          <p className="text-2xl font-bold text-orange-500">{coffeeStats.count}</p>
+          <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Coffee Breaks</p>
+        </Card>
+        <Card className="p-4 text-center bg-card shadow-sm border-border/60">
+          <p className="text-2xl font-bold text-orange-500">{coffeeStats.minutes}</p>
+          <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Mins Rested</p>
         </Card>
       </div>
 

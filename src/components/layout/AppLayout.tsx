@@ -9,20 +9,21 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Zap,
   LogOut,
   User,
   Archive,
   MoreHorizontal,
   X,
 } from 'lucide-react'
+import { Logo } from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
 import { useTaskStore } from '@/stores/taskStore'
-import { useTimerStore } from '@/stores/timerStore'
+import { useTimerStore, type TimerMode } from '@/stores/timerStore'
 import { useHabitStore } from '@/stores/habitStore'
 import { CommandPalette } from '@/components/CommandPalette'
 import { LevelBadge } from '@/components/ui/LevelBadge'
+import { InstallBanner } from '@/components/pwa/InstallBanner'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -35,7 +36,7 @@ const navItems = [
 ]
 
 export default function AppLayout() {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [showTopBar, setShowTopBar] = useState(true)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const navigate = useNavigate()
@@ -67,7 +68,13 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (isTimerRunning) {
-      const modeLabel = timerMode === 'focus' ? 'Focus' : timerMode === 'shortBreak' ? 'Break' : 'Long Break'
+      const modeLabels: Record<TimerMode, string> = {
+        focus: 'Focus',
+        shortBreak: 'Break',
+        longBreak: 'Long Break',
+        coffeeBreak: 'Coffee Break'
+      }
+      const modeLabel = modeLabels[timerMode] || 'Timing'
       document.title = `${timerDisplay} — ${modeLabel} | OBEL`
     } else {
       document.title = 'OBEL'
@@ -89,8 +96,8 @@ export default function AppLayout() {
   const sidebarContent = (
     <>
       <div className="flex items-center gap-3 px-4 h-16 border-b border-border/50 shrink-0">
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground shrink-0 shadow-[0_0_20px_rgba(var(--primary),0.3)]">
-          <Zap className="w-5 h-5" />
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 shrink-0 border border-primary/20">
+          <Logo size={24} />
         </div>
         {!collapsed && (
           <motion.div
@@ -111,15 +118,16 @@ export default function AppLayout() {
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 group ${
+              `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 group relative ${
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                   : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
               }`
             }
           >
-            <item.icon className="w-5 h-5 shrink-0" />
-            {!collapsed && (
+            <item.icon className="w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110" />
+            
+            {!collapsed ? (
               <motion.span
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: 'auto' }}
@@ -127,6 +135,14 @@ export default function AppLayout() {
               >
                 {item.label}
               </motion.span>
+            ) : (
+              <div className="absolute left-full ml-4 px-3 py-1.5 bg-card/95 backdrop-blur-2xl border border-primary/20 rounded-xl shadow-2xl opacity-0 translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none whitespace-nowrap z-100 hidden md:block">
+                <span className="text-[10px] font-black tracking-[0.2em] uppercase text-foreground">
+                  {item.label}
+                </span>
+                {/* Tooltip Arrow */}
+                <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 bg-card/95 border-l border-t border-primary/20 -rotate-45" />
+              </div>
             )}
           </NavLink>
         ))}
@@ -197,8 +213,8 @@ export default function AppLayout() {
           transition={{ duration: 0.2 }}
           className="flex items-center gap-3 px-4 h-14 border-b border-border/50 shrink-0 md:hidden bg-background/50 backdrop-blur-xl sticky top-0 z-40"
         >
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]">
-            <Zap className="w-4 h-4" />
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/5 border border-primary/20">
+            <Logo size={18} />
           </div>
           <span className="font-black text-xl tracking-widest uppercase">OBEL</span>
         </motion.div>
@@ -266,6 +282,7 @@ export default function AppLayout() {
       </main>
 
       <CommandPalette />
+      <InstallBanner />
     </div>
   )
 }

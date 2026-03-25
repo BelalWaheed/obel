@@ -61,12 +61,12 @@ export default function HabitsPage() {
     setIsSaving(true)
     
     if (editingHabit) {
-      await updateHabit(editingHabit.id, {
+      updateHabit(editingHabit.id, {
         name: formName,
         description: formDescription,
       })
     } else {
-      await addHabit({
+      addHabit({
         name: formName,
         description: formDescription,
         frequency: 'daily',

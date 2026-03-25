@@ -33,50 +33,105 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*mockapi\.io\/.*/i,
+            urlPattern: /.*\/tasks.*/i,
             handler: 'NetworkFirst',
             method: 'GET',
             options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              cacheName: 'tasks-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
           {
-            urlPattern: /^https:\/\/.*mockapi\.io\/.*/i,
+            urlPattern: /.*\/habits.*/i,
+            handler: 'NetworkFirst',
+            method: 'GET',
+            options: {
+              cacheName: 'habits-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            urlPattern: /.*\/tasks.*/i,
             handler: 'NetworkOnly',
             method: 'POST',
             options: {
               backgroundSync: {
-                name: 'offline-api-post-queue',
+                name: 'tasks-post-sync',
                 options: { maxRetentionTime: 24 * 60 },
               },
             },
           },
           {
-            urlPattern: /^https:\/\/.*mockapi\.io\/.*/i,
+            urlPattern: /.*\/tasks.*/i,
             handler: 'NetworkOnly',
             method: 'PUT',
             options: {
               backgroundSync: {
-                name: 'offline-api-put-queue',
+                name: 'tasks-put-sync',
                 options: { maxRetentionTime: 24 * 60 },
               },
             },
           },
           {
-            urlPattern: /^https:\/\/.*mockapi\.io\/.*/i,
+            urlPattern: /.*\/habits.*/i,
+            handler: 'NetworkOnly',
+            method: 'POST',
+            options: {
+              backgroundSync: {
+                name: 'habits-post-sync',
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
+            urlPattern: /.*\/habits.*/i,
+            handler: 'NetworkOnly',
+            method: 'PUT',
+            options: {
+              backgroundSync: {
+                name: 'habits-put-sync',
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
+            urlPattern: /.*\/tasks.*/i,
             handler: 'NetworkOnly',
             method: 'DELETE',
             options: {
               backgroundSync: {
-                name: 'offline-api-delete-queue',
+                name: 'tasks-delete-sync',
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
+            urlPattern: /.*\/habits.*/i,
+            handler: 'NetworkOnly',
+            method: 'DELETE',
+            options: {
+              backgroundSync: {
+                name: 'habits-delete-sync',
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
+            urlPattern: /.*\/users.*/i,
+            handler: 'NetworkFirst',
+            method: 'GET',
+            options: {
+              cacheName: 'user-cache',
+              expiration: { maxEntries: 10 },
+            },
+          },
+          {
+            urlPattern: /.*\/users.*/i,
+            handler: 'NetworkOnly',
+            method: 'PUT',
+            options: {
+              backgroundSync: {
+                name: 'user-update-sync',
                 options: { maxRetentionTime: 24 * 60 },
               },
             },
@@ -85,6 +140,20 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('framer-motion')) {
+              return 'vendor-animation';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
