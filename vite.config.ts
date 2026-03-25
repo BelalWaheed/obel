@@ -12,7 +12,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: [ 'obel.jpg'],
       manifest: {
         name: 'Obel Focus',
         short_name: 'Obel',
@@ -22,10 +22,16 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'favicon.svg',
+            src: 'obel.jpg',
             sizes: '192x192 512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            type: 'image/jpeg',
+            purpose: 'any'
+          },
+          {
+            src: 'obel.jpg',
+            sizes: '192x192 512x512',
+            type: 'image/jpeg',
+            purpose: 'maskable'
           }
         ]
       },
