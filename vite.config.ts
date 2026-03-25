@@ -33,6 +33,29 @@ export default defineConfig({
             type: 'image/jpeg',
             purpose: 'maskable'
           }
+        ],
+        shortcuts: [
+          {
+            name: 'New Task',
+            short_name: 'New',
+            description: 'Quickly create a new task',
+            url: '/tasks?action=new',
+            icons: [{ src: 'obel.jpg', sizes: '192x192' }]
+          },
+          {
+            name: 'Daily Planner',
+            short_name: 'Planner',
+            description: 'View your schedule for today',
+            url: '/planner',
+            icons: [{ src: 'obel.jpg', sizes: '192x192' }]
+          },
+          {
+            name: 'Pomodoro',
+            short_name: 'Focus',
+            description: 'Start a focus session',
+            url: '/pomodoro',
+            icons: [{ src: 'obel.jpg', sizes: '192x192' }]
+          }
         ]
       },
       workbox: {

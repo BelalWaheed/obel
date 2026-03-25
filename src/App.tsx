@@ -9,10 +9,12 @@ import HabitsPage from '@/pages/HabitsPage'
 import CalendarPage from '@/pages/CalendarPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ArchivePage from '@/pages/ArchivePage'
+import PWAUpdater from '@/components/layout/PWAUpdater'
 
 export default function App() {
   return (
     <BrowserRouter>
+      <PWAUpdater />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
