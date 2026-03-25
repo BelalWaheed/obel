@@ -57,6 +57,7 @@ export default function AppLayout() {
   const fetchTasks = useTaskStore((s) => s.fetchTasks)
   const loadFromUser = useTimerStore((s) => s.loadFromUser)
   const fetchHabits = useHabitStore((s) => s.fetchHabits)
+  const resumeTick = useTimerStore((s) => s.resumeTick)
 
   const isTimerRunning = useTimerStore((s) => s.isRunning)
   const timerRemaining = useTimerStore((s) => s.timeRemaining)
@@ -86,7 +87,8 @@ export default function AppLayout() {
     fetchTasks()
     loadFromUser()
     fetchHabits()
-  }, [fetchTasks, loadFromUser, fetchHabits])
+    resumeTick()
+  }, [fetchTasks, loadFromUser, fetchHabits, resumeTick])
 
   const handleLogout = () => {
     logout()

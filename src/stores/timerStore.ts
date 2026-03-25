@@ -49,6 +49,7 @@ interface TimerState {
   setActiveTaskId: (taskId: string | null) => void
   loadFromUser: () => Promise<void>
   saveToUser: () => Promise<void>
+  resumeTick: () => void
 }
 
 // Global interval so timer runs even when not on Pomodoro page
@@ -336,6 +337,12 @@ export const useTimerStore = create<TimerState>()(
           totalFocusHours,
         })
       },
+
+      resumeTick: () => {
+        if (get().isRunning) {
+          startGlobalTick()
+        }
+      },
     }),
     {
       name: 'obel-timer',
@@ -352,6 +359,3 @@ export const useTimerStore = create<TimerState>()(
   )
 )
 
-if (useTimerStore.getState().isRunning) {
-  startGlobalTick()
-}

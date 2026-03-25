@@ -177,9 +177,6 @@ export default defineConfig({
             if (id.includes('framer-motion')) {
               return 'vendor-animation';
             }
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('@tanstack')) {
-              return 'vendor-core';
-            }
             if (id.includes('recharts') || id.includes('d3')) {
               return 'vendor-charts';
             }
