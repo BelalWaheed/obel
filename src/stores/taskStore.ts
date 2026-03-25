@@ -238,9 +238,16 @@ export const useTaskStore = create<TaskState>()(
   toggleSubtask: async (taskId, subtaskId) => {
     const task = get().tasks.find((t) => t.id === taskId)
     if (!task) return
-    const subtasks = task.subtasks.map((s) =>
-      s.id === subtaskId ? { ...s, completed: !s.completed } : s
-    )
+    const subtasks = task.subtasks.map((s) => {
+      if (s.id === subtaskId) {
+        const willComplete = !s.completed
+        if (willComplete) {
+          import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playClick())
+        }
+        return { ...s, completed: willComplete }
+      }
+      return s
+    })
     await get().updateTask(taskId, { subtasks })
   },
 

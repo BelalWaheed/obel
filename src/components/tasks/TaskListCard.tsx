@@ -65,9 +65,9 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold tracking-tight first-letter:uppercase">{title}</h2>
+              <h2 className="text-xl font-bold tracking-tight first-letter:uppercase">{title}</h2>
               <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                <span className="text-muted-foreground font-semibold text-lg">{tasks.length}</span>
+                <span className="text-muted-foreground font-semibold text-base">{tasks.length}</span>
                 <Button 
                   size="icon" 
                   variant="ghost" 
@@ -145,7 +145,7 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
                       </button>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-bold text-lg truncate transition-colors duration-300 ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                        <h3 className={`font-bold text-base truncate transition-colors duration-300 ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                           {task.title}
                         </h3>
                         {(!isDone && totalSubtasks > 0) && (
@@ -154,7 +154,7 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
                           </p>
                         )}
                         {task.description && !isDone && (
-                          <p className="text-sm text-muted-foreground truncate opacity-70 mt-0.5">
+                          <p className="text-xs text-muted-foreground line-clamp-2 opacity-70 mt-0.5 leading-relaxed">
                             {task.description}
                           </p>
                         )}

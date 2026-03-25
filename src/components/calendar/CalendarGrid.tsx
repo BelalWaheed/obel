@@ -17,9 +17,10 @@ interface CalendarGridProps {
   onPrevWeek: () => void
   onNextWeek: () => void
   onToday: () => void
+  onTaskClick: (taskId: string) => void
 }
 
-export function CalendarGrid({ currentDate, onPrevWeek, onNextWeek, onToday }: CalendarGridProps) {
+export function CalendarGrid({ currentDate, onPrevWeek, onNextWeek, onToday, onTaskClick }: CalendarGridProps) {
   const tasks = useTaskStore((state) => state.tasks)
   
   const daysInWeek = useMemo(() => {
@@ -81,15 +82,15 @@ export function CalendarGrid({ currentDate, onPrevWeek, onNextWeek, onToday }: C
         </div>
       </div>
 
-      <div className="grid grid-cols-7 border-b border-border/50">
+      <div className="hidden sm:grid grid-cols-7 border-b border-border/50">
         {weekDays.map(day => (
-          <div key={day} className="py-3 text-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/5">
+          <div key={day} className="py-2 text-center text-[9px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/5">
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 auto-rows-[140px] sm:auto-rows-[180px]">
+      <div className="flex flex-col sm:grid sm:grid-cols-7 auto-rows-auto sm:auto-rows-[180px]">
         {daysInWeek.map((day, idx) => {
           const isToday = day.isSame(dayjs(), 'day')
           const dateKey = day.format('YYYY-MM-DD')
@@ -98,37 +99,52 @@ export function CalendarGrid({ currentDate, onPrevWeek, onNextWeek, onToday }: C
           return (
             <div 
               key={idx} 
-              className={`p-3 border-r border-b border-border/30 last:border-r-0 relative transition-colors bg-background/20 hover:bg-muted/10`}
+              className={`p-3 sm:p-2 md:p-3 border-b border-border/30 sm:border-r last:border-r-0 relative transition-colors bg-background/20 hover:bg-muted/5 flex flex-col min-h-[100px] sm:min-h-0`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex flex-col items-center">
-                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{weekDays[day.day()]}</span>
-                   <span className={`text-base font-black w-8 h-8 flex items-center justify-center rounded-full ${
-                    isToday ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' : 'text-foreground/70'
-                  }`}>
-                    {day.date()}
-                  </span>
+              <div className="flex sm:flex-col justify-between items-center sm:items-start mb-3 sm:mb-2 shrink-0 gap-3">
+                <div className="flex items-center sm:flex-col gap-3 sm:gap-1">
+                   <div className="flex flex-col sm:items-center">
+                      <span className="text-[10px] sm:text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">
+                        {weekDays[day.day()]}
+                      </span>
+                      <span className={`text-sm font-black w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-full transition-all ${
+                        isToday ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' : 'text-foreground/70'
+                      }`}>
+                        {day.date()}
+                      </span>
+                   </div>
+                   <div className="sm:hidden flex flex-col">
+                      <span className="text-xs font-bold text-foreground/80">{day.format('MMMM D, YYYY')}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{dayTasks.length} objectives</span>
+                   </div>
                 </div>
                 {dayTasks.length > 0 && (
-                  <span className="w-2 h-2 rounded-full bg-primary/40 mt-6" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary hidden sm:block mt-6" />
                 )}
               </div>
-              <div className="space-y-1.5 overflow-y-auto max-h-[80px] sm:max-h-[110px] custom-scrollbar pr-0.5 mt-2">
-                {dayTasks.map(task => (
-                  <div 
-                    key={task.id}
-                    className={`text-[9px] sm:text-[10px] p-1.5 rounded-lg border-l-2 truncate font-bold ${
-                      task.status === 'done' 
-                        ? 'bg-muted/5 text-muted-foreground/50 border-muted-foreground/30 line-through opacity-60' 
-                        : 'bg-card border-l-primary shadow-sm hover:translate-x-0.5 transition-transform'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
-                      <span className="truncate">{task.title}</span>
-                    </div>
+              <div className="space-y-1.5 overflow-y-auto max-h-[150px] sm:max-h-[140px] custom-scrollbar pr-0.5 mt-1 flex-1">
+                {dayTasks.length === 0 ? (
+                  <div className="sm:hidden py-4 text-center border border-dashed border-border/40 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-medium italic">Rest and reflect day</p>
                   </div>
-                ))}
+                ) : (
+                  dayTasks.map(task => (
+                    <button 
+                      key={task.id}
+                      onClick={() => onTaskClick(task.id)}
+                      className={`w-full text-left text-[10px] sm:text-[9px] md:text-[10px] p-2.5 sm:p-2 rounded-xl border-l-2 font-bold transition-all duration-200 group/item ${
+                        task.status === 'done' 
+                          ? 'bg-muted/10 text-muted-foreground/50 border-muted-foreground/30 line-through opacity-60' 
+                          : 'bg-card border-l-primary shadow-xs hover:shadow-md hover:bg-muted/10 hover:-translate-y-0.5 active:scale-95'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
+                        <span className="truncate">{task.title}</span>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )

@@ -64,7 +64,7 @@ export default function DashboardPage() {
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
       <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight">
             {greeting}{userName ? `, ${userName}` : ''} 👋
           </h1>
           <p className="text-muted-foreground mt-1">Here's what's happening with your productivity today.</p>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl ${stat.bgColor}`}><Icon className={`w-5 h-5 ${stat.color}`} /></div>
                 <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xl font-bold">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </div>
               </div>

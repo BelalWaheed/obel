@@ -59,7 +59,7 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24 px-4 sm:px-6">
+    <div className="space-y-6 max-w-5xl mx-auto ">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
         <div className="relative group">
@@ -68,7 +68,7 @@ export default function TasksPage() {
             animate={{ opacity: 1, x: 0 }}
             className="absolute -left-4 top-0 bottom-0 w-1 bg-primary rounded-full" 
           />
-          <h1 className="text-6xl lg:text-7xl font-black tracking-tight font-arabic bg-linear-to-br from-foreground via-foreground to-primary/40 bg-clip-text text-transparent pb-2 leading-tight">
+          <h1 className="text-5xl lg:text-6xl font-black tracking-tight font-arabic bg-linear-to-br from-foreground via-foreground to-primary/40 bg-clip-text text-transparent pb-2 leading-tight">
             استعن بالله
           </h1>
         </div>

@@ -168,7 +168,9 @@ export default function HabitsPage() {
                       <button
                         onClick={(e) => { 
                           e.stopPropagation(); 
-                          if (!completed) {
+                          const willComplete = !completed;
+                          if (willComplete) {
+                            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playHabitCheck())
                             import('canvas-confetti').then((confetti) => {
                               confetti.default({
                                 particleCount: 150,
@@ -177,6 +179,8 @@ export default function HabitsPage() {
                                 colors: ['#f97316', '#eab308', '#22c55e'] // Fire/Gold/Green
                               })
                             })
+                          } else {
+                            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playHabitUncheck())
                           }
                           toggleHabitCompletion(habit.id, todayStr) 
                         }}

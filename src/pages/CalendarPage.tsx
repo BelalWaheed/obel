@@ -1,14 +1,35 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarGrid } from '@/components/calendar/CalendarGrid'
+import { TaskDetailsModal } from '@/components/tasks/TaskDetailsModal'
+import { TaskFormModal } from '@/components/tasks/TaskFormModal'
+import { useTaskStore } from '@/stores/taskStore'
+import { useTimerStore } from '@/stores/timerStore'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 
 export default function CalendarPage() {
+  const navigate = useNavigate()
+  const tasks = useTaskStore((state) => state.tasks)
+  const setActiveTaskId = useTimerStore((state) => state.setActiveTaskId)
+  
   const [currentDate, setCurrentDate] = useState(dayjs())
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<any>(null)
 
   const handlePrevWeek = () => setCurrentDate(currentDate.subtract(1, 'week'))
   const handleNextWeek = () => setCurrentDate(currentDate.add(1, 'week'))
   const handleToday = () => setCurrentDate(dayjs())
+
+  const selectedTask = useMemo(() => 
+    selectedTaskId ? tasks.find(t => t.id === selectedTaskId) || null : null,
+  [tasks, selectedTaskId])
+
+  const handleStartFocus = (taskId: string) => {
+    setActiveTaskId(taskId)
+    navigate('/pomodoro')
+  }
 
   return (
     <motion.div 
@@ -30,14 +51,15 @@ export default function CalendarPage() {
         onPrevWeek={handlePrevWeek}
         onNextWeek={handleNextWeek}
         onToday={handleToday}
+        onTaskClick={(id) => setSelectedTaskId(id)}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
           <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Weekly Planning</h4>
           <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-            Switch to the <strong>Planner</strong> view to timeblock your next 24 hours. 
-            The calendar ensures your long-term goals align with your daily execution.
+            Use this view to align your weekly goals. Clicking any task will reveal its full roadmap, 
+            allowing you to stay synchronized with your broader mission.
           </p>
         </div>
         <div className="p-4 rounded-2xl bg-muted/20 border border-border/50">
@@ -48,6 +70,19 @@ export default function CalendarPage() {
           </p>
         </div>
       </div>
+
+      <TaskDetailsModal 
+        task={selectedTask}
+        onClose={() => setSelectedTaskId(null)}
+        onEdit={(task) => { setEditingTask(task); setIsEditModalOpen(true); }}
+        onStartFocus={handleStartFocus}
+      />
+
+      <TaskFormModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        editingTask={editingTask}
+      />
     </motion.div>
   )
 }

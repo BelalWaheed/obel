@@ -202,7 +202,15 @@ export default function PomodoroPage() {
         <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={reset} title="Reset">
           <RotateCcw className="w-5 h-5" />
         </Button>
-        <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={() => isRunning ? pause() : start()}>
+        <Button size="lg" className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/25" onClick={() => {
+          if (isRunning) {
+            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playPause());
+            pause();
+          } else {
+            import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playStart());
+            start();
+          }
+        }}>
           {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
         </Button>
         <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={skip} title="Skip">
