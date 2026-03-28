@@ -48,7 +48,7 @@ export async function getProductivityAdvice(data: { tasks: any[], habits: any[],
   try {
     const prompt = `You are a professional productivity coach. Analyze the following user data and provide ONE concise, motivating advice (max 2 sentences).
     
-    Tasks: ${JSON.stringify(data.tasks.map(t => ({ title: t.title, status: t.status, priority: t.priority })))}
+    Tasks: ${JSON.stringify(data.tasks.map(t => ({ title: t.title, status: t.status })))}
     Habits: ${JSON.stringify(data.habits.map(h => ({ name: h.name, streak: h.currentStreak })))}
     Recent Focus Sessions: ${data.sessions.length}
     
@@ -67,11 +67,10 @@ export async function getProductivityAdvice(data: { tasks: any[], habits: any[],
 export async function parseCommand(input: string): Promise<{ 
   title: string; 
   dueDate?: string; 
-  priority: 'low' | 'medium' | 'high' | 'urgent'; 
   tags: string[] 
 }> {
   if (!import.meta.env.VITE_GEMINI_API_KEY ) {
-    return { title: input, priority: 'medium', tags: [] }; // Fallback
+    return { title: input, tags: [] }; // Fallback
   }
 
   try {
@@ -83,18 +82,17 @@ export async function parseCommand(input: string): Promise<{
     {
       "title": "Cleaned task title",
       "dueDate": "ISO8601 string or null",
-      "priority": "low" | "medium" | "high" | "urgent",
       "tags": ["tag1", "tag2"]
     }
     
-    Handle relative dates (tomorrow, next friday, in 2 hours). Use "medium" as default priority.`;
+    Handle relative dates (tomorrow, next friday, in 2 hours).`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text().replace(/```json|```/g, "").trim();
     return JSON.parse(text);
   } catch (error) {
     console.error("NLP Parsing failed:", error);
-    return { title: input, priority: 'medium', tags: [] };
+    return { title: input, tags: [] };
   }
 }
 

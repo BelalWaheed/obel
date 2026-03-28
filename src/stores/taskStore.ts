@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware'
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api'
 import { useAuthStore } from './authStore'
 
-export type Priority = 'low' | 'medium' | 'high' | 'urgent'
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
 
 export interface TaskList {
@@ -22,7 +21,6 @@ export interface Task {
   id: string
   title: string
   description?: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
   tags: string[]
   subtasks: Subtask[]
   status: 'todo' | 'in-progress' | 'done'
@@ -42,7 +40,6 @@ interface ApiTask {
   id: string
   title: string
   description: string
-  priority: string
   tags: string
   subtasks: string
   status: string
@@ -62,7 +59,6 @@ function parseApiTask(raw: ApiTask): Task {
   try { subtasks = JSON.parse(raw.subtasks || '[]') } catch { /* empty */ }
   return {
     ...raw,
-    priority: (raw.priority || 'medium') as Priority,
     status: (raw.status || 'todo') as TaskStatus,
     tags,
     subtasks,
@@ -107,7 +103,7 @@ interface TaskState {
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>
 
   // Selectors
-  getFilteredTasks: (status?: string, priority?: string, search?: string) => Task[]
+  getFilteredTasks: (status?: string, search?: string) => Task[]
   getAllTags: () => string[]
   getTasksDueToday: () => Task[]
   getCompletedToday: () => Task[]
@@ -153,7 +149,6 @@ export const useTaskStore = create<TaskState>()(
       subtasks: [],
       tags: taskData.tags || [],
       status: 'todo',
-      priority: taskData.priority || 'medium',
       userId,
     } as Task
     set((s) => ({ tasks: [...s.tasks, tempTask] }))
@@ -259,10 +254,9 @@ export const useTaskStore = create<TaskState>()(
     await get().updateTask(taskId, { subtasks })
   },
 
-  getFilteredTasks: (status, priority, search) => {
+  getFilteredTasks: (status, search) => {
     let filtered = get().tasks
     if (status && status !== 'all') filtered = filtered.filter((t) => t.status === status)
-    if (priority && priority !== 'all') filtered = filtered.filter((t) => t.priority === priority)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(

@@ -15,6 +15,7 @@ export interface UserProfile {
   unlockedThemes?: string
   activeTheme?: string
   partnerId?: string
+  coffeeCups: number
   xp: number
   level: number
   longestFocusStreak: number
@@ -93,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
             totalFocusHours: '0',
             xp: 0,
             level: 1,
+            coffeeCups: 0,
             longestFocusStreak: 0,
             createdAt: new Date().toISOString(),
           })

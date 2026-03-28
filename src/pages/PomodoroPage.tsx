@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select'
 import { useTimerStore, type TimerMode } from '@/stores/timerStore'
 import { useTaskStore } from '@/stores/taskStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import { CoffeeBreakTimer } from '@/components/pomodoro/CoffeeBreakTimer'
 
@@ -61,6 +62,7 @@ export default function PomodoroPage() {
   const tasks = useTaskStore((s) => s.tasks)
   const activeTasks = useMemo(() => tasks.filter((t) => t.status !== 'done'), [tasks])
   const activeTask = useMemo(() => tasks.find((t) => t.id === activeTaskId), [tasks, activeTaskId])
+  const coffeeCups = useAuthStore((s) => typeof s.user?.coffeeCups === 'number' ? s.user.coffeeCups : 0)
 
   const [showSettings, setShowSettings] = useState(false)
   const [localFocus, setLocalFocus] = useState(settings.focusDuration)
@@ -272,6 +274,16 @@ export default function PomodoroPage() {
           <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Mins Rested</p>
         </Card>
       </div>
+
+      {/* Lifetime Coffee Cups */}
+      {coffeeCups > 0 && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500/10 border border-orange-500/20">
+            <Coffee className="w-4 h-4 text-orange-500" />
+            <span className="text-sm font-bold text-orange-500">{coffeeCups} lifetime coffee cups ☕</span>
+          </div>
+        </div>
+      )}
 
       {/* Today's Sessions */}
       {todaySessions.length > 0 && (

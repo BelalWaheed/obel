@@ -51,7 +51,6 @@ export function CommandPalette() {
         title: parsed.title,
         description: '',
         status: 'todo',
-        priority: parsed.priority,
         tags: parsed.tags,
         subtasks: [],
         dueDate: parsed.dueDate || undefined,
@@ -137,9 +136,6 @@ export function CommandPalette() {
                 </div>
                 {aiSuggestions && (
                   <div className="flex gap-1 animate-in fade-in slide-in-from-right-2">
-                    {aiSuggestions.priority === 'high' || aiSuggestions.priority === 'urgent' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-500 font-bold uppercase tracking-tighter">Urgent</span>
-                    ) : null}
                     {aiSuggestions.dueDate && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-500 font-bold">
                         {new Date(aiSuggestions.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}

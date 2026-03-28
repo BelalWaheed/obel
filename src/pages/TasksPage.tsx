@@ -20,7 +20,6 @@ export default function TasksPage() {
   const setActiveTaskId = useTimerStore((state) => state.setActiveTaskId)
 
   const [filterStatus] = useState<string>('all')
-  const [filterPriority] = useState<string>('all')
   const [searchQuery] = useState('')
 
   const [selectedTaskDetailsId, setSelectedTaskDetailsId] = useState<string | null>(null)
@@ -29,10 +28,10 @@ export default function TasksPage() {
 
   const filteredTasks = useMemo(
     () => {
-      let fTasks = getFilteredTasks(filterStatus, filterPriority, searchQuery)
+      let fTasks = getFilteredTasks(filterStatus, searchQuery)
       return fTasks
     },
-    [filterStatus, filterPriority, searchQuery, getFilteredTasks, tasks]
+    [filterStatus, searchQuery, getFilteredTasks, tasks]
   ) 
   
   const tasksByList = useMemo(() => {
@@ -82,7 +81,7 @@ export default function TasksPage() {
       )}
 
       {/* List Cards Board / Container */}
-      <div className="flex flex-col md:flex-row md:items-start md:overflow-x-auto md:pb-8 md:gap-6 min-h-[calc(100vh-250px)] custom-scrollbar px-1">
+      <div className="flex flex-col md:flex-row md:items-start md:overflow-x-auto md:pb-8 gap-6 min-h-[calc(100vh-250px)] custom-scrollbar px-1">
         <AnimatePresence mode="popLayout">
           {!isLoading && lists.length === 0 ? (
              <motion.div

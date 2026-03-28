@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useTaskStore, type Priority, type TaskStatus, type Task, type Subtask } from '@/stores/taskStore'
+import { useTaskStore, type TaskStatus, type Task, type Subtask } from '@/stores/taskStore'
 import { generateSubtasks } from '@/lib/ai'
 import dayjs from 'dayjs'
 
@@ -21,7 +21,6 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
 
   const [formTitle, setFormTitle] = useState('')
   const [formDescription, setFormDescription] = useState('')
-  const [formPriority, setFormPriority] = useState<Priority>('medium')
   const [formTags, setFormTags] = useState('')
   const [formDueDate, setFormDueDate] = useState('')
   const [formStatus, setFormStatus] = useState<TaskStatus>('todo')
@@ -35,7 +34,6 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
       if (editingTask) {
         setFormTitle(editingTask.title)
         setFormDescription(editingTask.description || '')
-        setFormPriority(editingTask.priority)
         setFormTags(editingTask.tags.join(', '))
         setFormDueDate(editingTask.dueDate || '')
         setFormStatus(editingTask.status)
@@ -44,7 +42,6 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
       } else {
         setFormTitle('')
         setFormDescription('')
-        setFormPriority('medium')
         setFormTags('')
         setFormDueDate(dayjs().format('YYYY-MM-DD')) // Default deadline to today
         setFormStatus('todo')
@@ -63,7 +60,6 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
       updateTask(editingTask.id, {
         title: formTitle,
         description: formDescription,
-        priority: formPriority,
         tags,
         dueDate: formDueDate || undefined,
         status: formStatus,
@@ -74,7 +70,6 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
       addTask({
         title: formTitle,
         description: formDescription,
-        priority: formPriority,
         tags,
         subtasks: formSubtasks,
         dueDate: formDueDate || undefined,

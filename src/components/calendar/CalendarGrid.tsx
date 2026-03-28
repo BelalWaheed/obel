@@ -2,15 +2,9 @@ import { useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useTaskStore, type Task, type Priority } from '@/stores/taskStore'
+import { useTaskStore, type Task } from '@/stores/taskStore'
 import dayjs from 'dayjs'
 
-const priorityColors: Record<Priority, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-blue-500',
-}
 
 interface CalendarGridProps {
   currentDate: dayjs.Dayjs
@@ -139,7 +133,7 @@ export function CalendarGrid({ currentDate, onPrevWeek, onNextWeek, onToday, onT
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-primary" />
                         <span className="truncate">{task.title}</span>
                       </div>
                     </button>

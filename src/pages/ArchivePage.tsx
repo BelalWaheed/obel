@@ -68,7 +68,7 @@ export default function ArchivePage() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">Completed {dayjs(task.completedAt).format('MMM D, YYYY')}</span>
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">Completed {dayjs(task.completedAt && dayjs(task.completedAt).isValid() ? task.completedAt : task.createdAt).format('MMM D, YYYY')}</span>
                     </div>
                     <h3 className="text-lg font-bold text-muted-foreground line-through decoration-muted-foreground/30 truncate">
                       {task.title}

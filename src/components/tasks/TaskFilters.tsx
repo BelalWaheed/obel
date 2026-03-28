@@ -8,8 +8,6 @@ interface TaskFiltersProps {
   setSearchQuery: (query: string) => void
   filterStatus: string
   setFilterStatus: (status: string) => void
-  filterPriority: string
-  setFilterPriority: (priority: string) => void
   allTags: string[]
 }
 
@@ -18,8 +16,6 @@ export function TaskFilters({
   setSearchQuery,
   filterStatus,
   setFilterStatus,
-  filterPriority,
-  setFilterPriority,
   allTags,
 }: TaskFiltersProps) {
   return (
@@ -48,18 +44,6 @@ export function TaskFilters({
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="todo">To Do</SelectItem>
               <SelectItem value="in-progress">In Progress</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v ?? 'all')}>
-            <SelectTrigger className="w-full md:w-[150px] h-12 rounded-2xl bg-background/50 border-border/50 text-base font-medium">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-border/50 bg-card/95 backdrop-blur-xl">
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="urgent">🔴 Urgent</SelectItem>
-              <SelectItem value="high">🟠 High</SelectItem>
-              <SelectItem value="medium">🟡 Medium</SelectItem>
-              <SelectItem value="low">🔵 Low</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -1,8 +1,16 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Calendar as CalendarIcon, GripVertical } from 'lucide-react'
+import { Calendar as CalendarIcon, GripVertical, Clock, X, MoreVertical } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
 import { useTaskStore, type Task } from '@/stores/taskStore'
 import dayjs from 'dayjs'
 
@@ -61,6 +69,15 @@ export default function PlannerPage() {
     e.preventDefault()
   }
 
+  const handleMobileSchedule = async (taskId: string, hour: number) => {
+    const timeStr = `${hour.toString().padStart(2, '0')}:00`
+    await updateTask(taskId, { scheduledTime: timeStr })
+  }
+
+  const handleMobileUnschedule = async (taskId: string) => {
+    await updateTask(taskId, { scheduledTime: '' })
+  }
+
   // Auto-scroll to current hour
   useEffect(() => {
     const currentHour = dayjs().hour()
@@ -108,7 +125,12 @@ export default function PlannerPage() {
             Backlog
           </h2>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          {unscheduledTasks.length === 0 && (
+            <div className="py-8 text-center border-2 border-dashed border-border/30 rounded-2xl">
+              <p className="text-sm font-medium italic text-muted-foreground/60">No tasks in backlog</p>
+            </div>
+          )}
           {unscheduledTasks.map((task) => (
             <motion.div
               layoutId={task.id}
@@ -117,13 +139,25 @@ export default function PlannerPage() {
               onDragStart={(e: any) => handleDragStart(e, task.id)}
               className="bg-card border border-border rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group flex items-start gap-2"
             >
-              <GripVertical className="w-4 h-4 text-muted-foreground/30 mt-0.5 group-hover:text-primary transition-colors shrink-0" />
-              <div>
-                <p className="text-sm font-medium leading-tight mb-1">{task.title}</p>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase">
-                  {task.priority}
-                </Badge>
+              <GripVertical className="w-4 h-4 text-muted-foreground/30 mt-0.5 group-hover:text-primary transition-colors shrink-0 hidden md:block" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium leading-tight mb-1 truncate">{task.title}</p>
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="h-6 w-6 -mr-1 text-muted-foreground md:hidden shrink-0 mt-0.5 flex items-center justify-center hover:bg-muted/10 rounded-lg outline-none" title="Schedule Task">
+                  <MoreVertical className="w-4 h-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[180px] h-[300px] overflow-y-auto custom-scrollbar">
+                  <DropdownMenuLabel>Schedule Time</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {HOURS.map(h => (
+                    <DropdownMenuItem key={h} onClick={() => handleMobileSchedule(task.id, h)} className="cursor-pointer">
+                      <Clock className="w-4 h-4 mr-2" />
+                      {dayjs().hour(h).minute(0).format('ha')}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </motion.div>
           ))}
         </div>
@@ -132,7 +166,7 @@ export default function PlannerPage() {
       <Card className={`flex-1 flex-col overflow-hidden border-border/50 ${mobileTab === 'timeline' ? 'flex' : 'hidden md:flex'}`}>
         <div 
           ref={timelineRef}
-          className="flex-1 overflow-y-auto p-4 md:p-6 bg-linear-to-b from-muted/5 to-background scroll-smooth"
+          className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 bg-linear-to-b from-muted/5 to-background scroll-smooth"
         >
           <div className="space-y-4 max-w-3xl mx-auto">
             {HOURS.map((hour) => {
@@ -175,17 +209,22 @@ export default function PlannerPage() {
                         whileHover={{ scale: 1.01, x: 4 }}
                         className="bg-background/80 backdrop-blur-md border border-border/50 rounded-xl p-4 cursor-grab active:cursor-grabbing hover:shadow-xl hover:shadow-primary/5 transition-all flex items-center justify-between group"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-1 h-8 rounded-full ${
-                            task.priority === 'urgent' ? 'bg-red-500' :
-                            task.priority === 'high' ? 'bg-orange-500' :
-                            task.priority === 'medium' ? 'bg-blue-500' : 'bg-slate-400'
-                          }`} />
-                          <div>
-                            <p className="text-sm font-bold tracking-tight">{task.title}</p>
-                          </div>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="w-1 h-8 rounded-full bg-primary shrink-0" />
+                          <p className="text-sm font-bold tracking-tight truncate">{task.title}</p>
                         </div>
-                        <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary transition-colors shrink-0" />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-auto" 
+                            title="Remove from timeline"
+                            onClick={() => handleMobileUnschedule(task.id)}
+                          >
+                            <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                          <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary transition-colors shrink-0 hidden md:block" />
+                        </div>
                       </motion.div>
                     ))}
                   </div>

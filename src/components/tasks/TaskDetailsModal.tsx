@@ -4,16 +4,11 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { useTaskStore, type Priority, type Task } from '@/stores/taskStore'
+import { useTaskStore, type Task } from '@/stores/taskStore'
 import dayjs from 'dayjs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-const priorityConfig: Record<Priority, { label: string; color: string; border: string }> = {
-  urgent: { label: 'Urgent', color: 'text-red-500 bg-red-500/10', border: 'border-red-500/20' },
-  high: { label: 'High', color: 'text-orange-500 bg-orange-500/10', border: 'border-orange-500/20' },
-  medium: { label: 'Medium', color: 'text-yellow-600 dark:text-yellow-500 bg-yellow-500/10', border: 'border-yellow-500/20' },
-  low: { label: 'Low', color: 'text-blue-500 bg-blue-500/10', border: 'border-blue-500/20' },
-}
+
 
 interface TaskDetailsModalProps {
   task: Task | null
@@ -32,8 +27,8 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
 
   if (!task) return null
 
+
   const isDone = task.status === 'done'
-  const prioConf = priorityConfig[task.priority]
   const totalSubtasks = task.subtasks.length
   const completedSubtasks = task.subtasks.filter((st) => st.completed).length
 
@@ -51,14 +46,11 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1 min-w-0 pr-6">
                 <div className="flex items-center gap-3 mb-3">
-                    {task.status === 'in-progress' && !isDone && (
+                  {task.status === 'in-progress' && !isDone && (
                     <Badge variant="secondary" className="bg-primary text-primary-foreground px-3 py-1 text-[10px] font-bold tracking-wide uppercase rounded-full shadow-lg shadow-primary/20 border-none">
                       Active
                     </Badge>
                   )}
-                  <Badge variant="outline" className={`capitalize px-3 py-1 text-[10px] font-bold rounded-full border ${prioConf.color} ${prioConf.border} ${isDone ? 'opacity-50 grayscale' : ''}`}>
-                    {prioConf.label} Priority
-                  </Badge>
                 </div>
                 <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                   {task.title}

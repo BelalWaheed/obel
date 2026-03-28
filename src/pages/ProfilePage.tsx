@@ -51,12 +51,7 @@ const COLORS = {
   todo: '#64748b', // slate-500
 }
 
-const PRIORITY_COLORS = {
-  urgent: '#ef4444', // red-500
-  high: '#f97316', // orange-500
-  medium: '#eab308', // yellow-500
-  low: '#3b82f6', // blue-500
-}
+
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user)
@@ -114,17 +109,7 @@ export default function ProfilePage() {
     { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length, color: COLORS.todo },
   ].filter(d => d.value > 0)
 
-  // Priority distribution of ALL tasks
-  const priorityData = useMemo(() => {
-    const counts = { urgent: 0, high: 0, medium: 0, low: 0 }
-    tasks.forEach(t => counts[t.priority]++)
-    return [
-      { name: 'Urgent', value: counts.urgent, color: PRIORITY_COLORS.urgent },
-      { name: 'High', value: counts.high, color: PRIORITY_COLORS.high },
-      { name: 'Medium', value: counts.medium, color: PRIORITY_COLORS.medium },
-      { name: 'Low', value: counts.low, color: PRIORITY_COLORS.low },
-    ].filter(d => d.value > 0)
-  }, [tasks])
+
 
   // ---------------------------------------------------------
   // 3. Fun Stats
@@ -147,18 +132,6 @@ export default function ProfilePage() {
         <div className="bg-popover text-popover-foreground border border-border p-3 rounded-lg shadow-xl">
           <p className="font-medium text-sm mb-1">{payload[0].payload.fullDate}</p>
           <p className="text-primary font-bold">{payload[0].value} minutes focused</p>
-        </div>
-      )
-    }
-    return null
-  }
-
-  const CustomPieTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-popover text-popover-foreground border border-border p-2 rounded-lg shadow-xl flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].payload.color }} />
-          <span className="font-medium">{payload[0].name}: {payload[0].value}</span>
         </div>
       )
     }
@@ -259,7 +232,7 @@ export default function ProfilePage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip content={<CustomPieTooltip />} />
+                    <Tooltip />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -270,28 +243,7 @@ export default function ProfilePage() {
           </Card>
         </motion.div>
 
-        {/* Priority Breakdown */}
-        <motion.div variants={item} className="lg:col-span-3">
-          <Card className="p-5">
-            <h3 className="font-semibold text-lg mb-4">Task Priority Distribution</h3>
-            {priorityData.length > 0 ? (
-              <div className="h-[250px] w-full max-w-lg mx-auto">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={priorityData} cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`} labelLine={false} dataKey="value">
-                      {priorityData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomPieTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground text-sm">No tasks found</div>
-            )}
-          </Card>
-        </motion.div>
+
 
       </div>
 

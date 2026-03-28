@@ -14,6 +14,10 @@ import {
   Archive,
   MoreHorizontal,
   X,
+  CalendarClock,
+  BarChart3,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
@@ -24,21 +28,26 @@ import { useHabitStore } from '@/stores/habitStore'
 import { CommandPalette } from '@/components/CommandPalette'
 import { LevelBadge } from '@/components/ui/LevelBadge'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/pomodoro', icon: Timer, label: 'Pomodoro' },
   { path: '/habits', icon: Sparkles, label: 'Habits' },
+  { path: '/planner', icon: CalendarClock, label: 'Planner' },
   { path: '/profile', icon: User, label: 'Profile' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/archive', icon: Archive, label: 'Archive' },
 ]
 
 export default function AppLayout() {
-  const [collapsed, setCollapsed] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
   const [showTopBar, setShowTopBar] = useState(true)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
   const navigate = useNavigate()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { scrollY } = useScroll({ container: scrollContainerRef })
@@ -90,9 +99,37 @@ export default function AppLayout() {
     resumeTick()
   }, [fetchTasks, loadFromUser, fetchHabits, resumeTick])
 
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('obel-theme')
+    if (saved === 'dark') {
+      document.documentElement.classList.add('dark')
+      setIsDark(true)
+    } else if (saved === 'light') {
+      document.documentElement.classList.remove('dark')
+      setIsDark(false)
+    } else {
+      // Follow system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      document.documentElement.classList.toggle('dark', prefersDark)
+      setIsDark(prefersDark)
+    }
+  }, [])
+
   const handleLogout = () => {
+    setShowLogoutConfirm(true)
+  }
+
+  const confirmLogout = () => {
     logout()
     navigate('/login', { replace: true })
+  }
+
+  const toggleTheme = () => {
+    const next = !isDark
+    setIsDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('obel-theme', next ? 'dark' : 'light')
   }
 
   const sidebarContent = (
@@ -166,6 +203,18 @@ export default function AppLayout() {
           </div>
         )}
 
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5"
+          >
+            {isDark ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
+            {!collapsed && <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
+          </Button>
+        </div>
+
         <Button
           variant="ghost"
           size="sm"
@@ -213,12 +262,17 @@ export default function AppLayout() {
           initial={{ y: 0 }}
           animate={{ y: showTopBar ? 0 : -60 }}
           transition={{ duration: 0.2 }}
-          className="flex items-center gap-3 px-4 h-14 border-b border-border/50 shrink-0 md:hidden bg-background/50 backdrop-blur-xl sticky top-0 z-40"
+          className="flex items-center justify-between px-4 h-14 border-b border-border/50 shrink-0 md:hidden bg-background/50 backdrop-blur-xl sticky top-0 z-40"
         >
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/5 border border-primary/20">
-            <Logo size={18} />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/5 border border-primary/20">
+              <Logo size={18} />
+            </div>
+            <span className="font-black text-xl tracking-widest uppercase">OBEL</span>
           </div>
-          <span className="font-black text-xl tracking-widest uppercase">OBEL</span>
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground w-8 h-8 rounded-lg">
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
         </motion.div>
 
         <div 
@@ -285,6 +339,18 @@ export default function AppLayout() {
 
       <CommandPalette />
       <InstallBanner />
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <DialogContent className="sm:max-w-[380px] rounded-2xl">
+          <DialogTitle className="text-xl font-bold">Log out?</DialogTitle>
+          <p className="text-sm text-muted-foreground">Are you sure you want to log out? Any unsaved changes will be lost.</p>
+          <DialogFooter className="flex gap-2 mt-4">
+            <Button variant="outline" className="flex-1 rounded-xl font-bold" onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
+            <Button variant="destructive" className="flex-1 rounded-xl font-bold" onClick={confirmLogout}>Log Out</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

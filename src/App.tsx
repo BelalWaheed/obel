@@ -9,6 +9,9 @@ import HabitsPage from '@/pages/HabitsPage'
 import CalendarPage from '@/pages/CalendarPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ArchivePage from '@/pages/ArchivePage'
+import PlannerPage from '@/pages/PlannerPage'
+import AnalyticsPage from '@/pages/AnalyticsPage'
+import NotFoundPage from '@/pages/NotFoundPage'
 import PWAUpdater from '@/components/layout/PWAUpdater'
 
 export default function App() {
@@ -29,6 +32,9 @@ export default function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/archive" element={<ArchivePage />} />
+            <Route path="/planner" element={<PlannerPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
       </Routes>

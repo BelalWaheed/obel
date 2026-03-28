@@ -4,15 +4,9 @@ import { ChevronDown, ChevronUp, Edit2, Check, X, Play, CheckCircle2 } from 'luc
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useTaskStore, type Task, type Priority } from '@/stores/taskStore'
-import { Badge } from '@/components/ui/badge'
+import { useTaskStore, type Task } from '@/stores/taskStore'
 
-const priorityConfig: Record<Priority, { label: string; color: string; border: string }> = {
-  urgent: { label: 'Urgent', color: 'text-red-500 bg-red-500/10', border: 'border-red-500/20' },
-  high: { label: 'High', color: 'text-orange-500 bg-orange-500/10', border: 'border-orange-500/20' },
-  medium: { label: 'Medium', color: 'text-yellow-600 dark:text-yellow-500 bg-yellow-500/10', border: 'border-yellow-500/20' },
-  low: { label: 'Low', color: 'text-blue-500 bg-blue-500/10', border: 'border-blue-500/20' },
-}
+
 
 interface TaskListCardProps {
   listId: string
@@ -40,7 +34,7 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
     <Card className="bg-card/40 backdrop-blur-xl border-border/40 overflow-hidden rounded-[2rem] md:w-[320px] lg:w-[350px] md:shrink-0 flex flex-col max-h-[calc(100vh-270px)] md:max-h-none h-fit">
       {/* Header */}
       <div 
-        className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/10 transition-colors group"
+        className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/10 transition-colors group "
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-4 flex-1">
@@ -103,7 +97,6 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
               ) : (
                 tasks.map((task) => {
                   const isDone = task.status === 'done'
-                  const prioConf = priorityConfig[task.priority]
                   const totalSubtasks = task.subtasks?.length || 0
                   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
 
@@ -162,9 +155,6 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
                       
                       {!isDone && (
                         <div className="flex items-center gap-3">
-                          <Badge variant="outline" className={`hidden sm:flex capitalize px-2.5 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${prioConf.color} ${prioConf.border}`}>
-                             {prioConf.label}
-                          </Badge>
                           <Button
                             onClick={(e) => { e.stopPropagation(); onStartFocus(task.id) }}
                             size="sm"

@@ -61,17 +61,17 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 flex items-center gap-4 bg-primary/5 border-primary/20">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <Card className="p-4 md:p-6 flex items-center gap-4 bg-primary/5 border-primary/20">
           <div className="p-3 rounded-2xl bg-primary/10 text-primary">
             <Zap className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-3xl font-black">{totalFocusHours}</p>
+            <p className="text-2xl md:text-3xl font-black">{totalFocusHours}</p>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Focus Hours</p>
           </div>
         </Card>
-        <Card className="p-6 flex items-center gap-4 bg-emerald-500/5 border-emerald-500/20">
+        <Card className="p-4 md:p-6 flex items-center gap-4 bg-emerald-500/5 border-emerald-500/20">
           <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
             <Target className="w-6 h-6" />
           </div>
@@ -80,61 +80,63 @@ export default function AnalyticsPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Objectives Cleared</p>
           </div>
         </Card>
-        <Card className="p-6 flex items-center gap-4 bg-blue-500/5 border-blue-500/20">
+        <Card className="p-4 md:p-6 flex items-center gap-4 bg-blue-500/5 border-blue-500/20">
           <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500">
             <BarChart3 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-3xl font-black">{Math.round((tasks.filter(t => t.status === 'done').length / (tasks.length || 1)) * 100)}%</p>
+            <p className="text-2xl md:text-3xl font-black">{Math.round((tasks.filter(t => t.status === 'done').length / (tasks.length || 1)) * 100)}%</p>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Completion Rate</p>
           </div>
         </Card>
       </div>
 
       {/* Heatmap Section */}
-      <Card className="p-8">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-6">Focus Intensity (Last 12 Weeks)</h3>
-        <div className="grid grid-cols-[repeat(12,1fr)] gap-2">
-           {Array.from({ length: 12 }).map((_, weekIdx) => (
+      <Card className="p-4 md:p-8">
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4 md:mb-6">Focus Intensity (Last 12 Weeks)</h3>
+        <div className="overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="grid grid-cols-[repeat(12,1fr)] gap-2 min-w-[500px]">
+             {Array.from({ length: 12 }).map((_, weekIdx) => (
              <div key={weekIdx} className="grid grid-rows-7 gap-1.5">
                {Array.from({ length: 7 }).map((_, dayIdx) => {
                  const dataIdx = weekIdx * 7 + dayIdx
                  const dayData = heatmapData[dataIdx] || { totalMinutes: 0 }
                  
                  // Dynamic color based on intensity
-                 let intensityClass = 'bg-muted/30'
-                 if (dayData.totalMinutes > 0) intensityClass = 'bg-primary/20'
-                 if (dayData.totalMinutes > 60) intensityClass = 'bg-primary/40'
-                 if (dayData.totalMinutes > 120) intensityClass = 'bg-primary/60'
-                 if (dayData.totalMinutes > 240) intensityClass = 'bg-primary/80'
-                 if (dayData.totalMinutes > 360) intensityClass = 'bg-primary'
+                 let intensityClass = 'bg-black/5 dark:bg-white/10'
+                 if (dayData.totalMinutes > 0) intensityClass = 'bg-primary/20 dark:bg-primary/40'
+                 if (dayData.totalMinutes > 60) intensityClass = 'bg-primary/40 dark:bg-primary/60'
+                 if (dayData.totalMinutes > 120) intensityClass = 'bg-primary/60 dark:bg-primary/80'
+                 if (dayData.totalMinutes > 240) intensityClass = 'bg-primary/80 dark:bg-primary'
+                 if (dayData.totalMinutes > 360) intensityClass = 'bg-primary dark:bg-primary border border-white/20'
 
                  return (
                    <motion.div 
                      key={dayIdx}
                      whileHover={{ scale: 1.2, zIndex: 10 }}
-                     className={`aspect-square rounded-sm ${intensityClass} cursor-help transition-colors border border-black/5`}
+                     className={`aspect-square rounded-sm ${intensityClass} cursor-help transition-colors`}
                      title={`${dayData.date}: ${dayData.totalMinutes} mins focus`}
                    />
                  )
                })}
              </div>
            ))}
+          </div>
         </div>
-        <div className="flex items-center justify-end gap-2 mt-4 text-[10px] text-muted-foreground font-bold uppercase">
+        <div className="flex items-center justify-end gap-2 mt-2 md:mt-4 text-[10px] text-muted-foreground font-bold uppercase">
           <span>Less</span>
-          <div className="w-3 h-3 rounded-sm bg-muted/30" />
-          <div className="w-3 h-3 rounded-sm bg-primary/20" />
-          <div className="w-3 h-3 rounded-sm bg-primary/40" />
-          <div className="w-3 h-3 rounded-sm bg-primary/60" />
-          <div className="w-3 h-3 rounded-sm bg-primary" />
+          <div className="w-3 h-3 rounded-sm bg-black/5 dark:bg-white/10" />
+          <div className="w-3 h-3 rounded-sm bg-primary/20 dark:bg-primary/40" />
+          <div className="w-3 h-3 rounded-sm bg-primary/40 dark:bg-primary/60" />
+          <div className="w-3 h-3 rounded-sm bg-primary/60 dark:bg-primary/80" />
+          <div className="w-3 h-3 rounded-sm bg-primary/80 dark:bg-primary" />
           <span>More</span>
         </div>
       </Card>
 
       {/* Weekly Trend Chart */}
-      <Card className="p-8">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-6">Weekly Focus Trend</h3>
+      <Card className="p-4 md:p-8">
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4 md:mb-6">Weekly Focus Trend</h3>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData}>

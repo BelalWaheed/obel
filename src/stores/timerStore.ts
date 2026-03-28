@@ -226,6 +226,12 @@ export const useTimerStore = create<TimerState>()(
             nextMode = newSessionsCompleted % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak'
           } else if (mode === 'coffeeBreak') {
             nextMode = 'focus'
+            // Increment coffeeCups on user profile
+            const user = useAuthStore.getState().user
+            if (user) {
+              const currentCups = typeof user.coffeeCups === 'number' ? user.coffeeCups : 0
+              useAuthStore.getState().updateUser({ coffeeCups: currentCups + 1 })
+            }
           } else {
             nextMode = 'focus'
           }

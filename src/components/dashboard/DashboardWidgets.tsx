@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { ListTodo, CheckCircle2, Clock, Zap, Play, ArrowRight, Calendar, Flag, Flame } from 'lucide-react'
+import { ListTodo, CheckCircle2, Clock, Zap, Play, ArrowRight, Calendar, Flame } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import type { Task } from '@/stores/taskStore'
 import type { Habit } from '@/stores/habitStore'
@@ -11,12 +10,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
 
-const priorityColors: Record<string, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-blue-500',
-}
+
 
 export function QuickActionsWidget({ isRunning, completionRate }: { isRunning: boolean; completionRate: number }) {
   const navigate = useNavigate()
@@ -65,7 +59,6 @@ export function DueTodayWidget({ tasks }: { tasks: Task[] }) {
         <div className="space-y-2">
           {tasks.slice(0, 5).map((task) => (
             <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" onClick={() => navigate('/tasks')}>
-              <div className={`w-2 h-2 rounded-full shrink-0 ${priorityColors[task.priority]}`} />
               <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
             </div>
           ))}
@@ -118,25 +111,3 @@ export function DailyHabitsWidget({ habits }: { habits: Habit[] }) {
   )
 }
 
-export function UrgentTasksWidget({ tasks }: { tasks: Task[] }) {
-  const navigate = useNavigate()
-  if (tasks.length === 0) return null
-  return (
-    <Card className="p-5 border-orange-500/30 bg-orange-500/5 h-full">
-      <div className="flex items-center gap-2 mb-4">
-        <Flag className="w-5 h-5 text-orange-500" />
-        <h3 className="font-semibold text-lg">Needs Attention</h3>
-        <Badge variant="secondary" className="ml-1">{tasks.length}</Badge>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {tasks.slice(0, 4).map((task) => (
-          <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:shadow-sm transition-shadow cursor-pointer" onClick={() => navigate('/tasks')}>
-            <div className={`w-2.5 h-2.5 rounded-full ${priorityColors[task.priority]}`} />
-            <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
-            {task.dueDate && <span className="text-xs text-muted-foreground">{dayjs(task.dueDate).fromNow()}</span>}
-          </div>
-        ))}
-      </div>
-    </Card>
-  )
-}
