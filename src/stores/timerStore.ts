@@ -111,6 +111,9 @@ export const useTimerStore = create<TimerState>()(
           isRunning: false,
         })
         stopGlobalTick()
+        import('@/lib/notifications').then(({ notificationSystem }) => {
+          notificationSystem.cancelScheduled('obel-timer')
+        })
       },
 
       start: (taskId) => {
@@ -125,12 +128,24 @@ export const useTimerStore = create<TimerState>()(
           activeTaskId: taskId !== undefined ? taskId : get().activeTaskId 
         })
 
+        const { mode, settings } = get()
+        if (settings.notificationsEnabled) {
+          import('@/lib/notifications').then(({ notificationSystem }) => {
+            const modeNames = { focus: 'Focus', shortBreak: 'Short Break', longBreak: 'Long Break', coffeeBreak: 'Coffee Break' }
+            const title = `${modeNames[mode]} session finished!`
+            notificationSystem.schedule(title, endTime, 'obel-timer', { body: 'Time to switch modes.' })
+          })
+        }
+
         startGlobalTick()
       },
 
       pause: () => {
         set({ isRunning: false, expectedEndTime: null })
         stopGlobalTick()
+        import('@/lib/notifications').then(({ notificationSystem }) => {
+          notificationSystem.cancelScheduled('obel-timer')
+        })
       },
 
       reset: () => {
@@ -151,6 +166,9 @@ export const useTimerStore = create<TimerState>()(
           activeTaskId: null,
         })
         stopGlobalTick()
+        import('@/lib/notifications').then(({ notificationSystem }) => {
+          notificationSystem.cancelScheduled('obel-timer')
+        })
       },
 
       skip: () => {
@@ -178,6 +196,9 @@ export const useTimerStore = create<TimerState>()(
           activeTaskId: null,
         })
         stopGlobalTick()
+        import('@/lib/notifications').then(({ notificationSystem }) => {
+          notificationSystem.cancelScheduled('obel-timer')
+        })
       },
 
       tick: () => {
@@ -271,6 +292,13 @@ export const useTimerStore = create<TimerState>()(
             import('@/lib/notifications').then(({ notificationSystem }) => {
               const title = nextMode === 'focus' ? 'Break Over!' : 'Session Complete!'
               notificationSystem.send(title, { body: 'Time to switch modes.' })
+              
+              if (shouldAutoStart) {
+                const endTime = Date.now() + (nextDuration * 1000)
+                const modeNames = { focus: 'Focus', shortBreak: 'Short Break', longBreak: 'Long Break', coffeeBreak: 'Coffee Break' }
+                const scheduledTitle = `${modeNames[nextMode]} session finished!`
+                notificationSystem.schedule(scheduledTitle, endTime, 'obel-timer', { body: 'Time to switch modes.' })
+              }
             })
           }
 

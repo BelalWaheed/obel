@@ -6,7 +6,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -148,7 +147,7 @@ export default function PlannerPage() {
                   <MoreVertical className="w-4 h-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-[180px] h-[300px] overflow-y-auto custom-scrollbar">
-                  <DropdownMenuLabel>Schedule Time</DropdownMenuLabel>
+                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Schedule Time</div>
                   <DropdownMenuSeparator />
                   {HOURS.map(h => (
                     <DropdownMenuItem key={h} onClick={() => handleMobileSchedule(task.id, h)} className="cursor-pointer">
