@@ -245,7 +245,7 @@ export default function NotesPage() {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Templates</DropdownMenuLabel>
                   {NOTE_TEMPLATES.map((tmpl, idx) => (
-                    <DropdownMenuItem key={tmpl.name} onClick={() => handleNewNote(idx)} className="cursor-pointer font-medium py-1.5 hidden sm:flex">
+                    <DropdownMenuItem key={tmpl.name} onClick={() => handleNewNote(idx)} className="cursor-pointer font-medium py-1.5 flex">
                        <span className="w-5 mr-2 text-center">{tmpl.icon}</span> {tmpl.name}
                     </DropdownMenuItem>
                   ))}
