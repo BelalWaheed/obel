@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Command } from 'cmdk'
 import { useNavigate } from 'react-router-dom'
 import { useTaskStore } from '@/stores/taskStore'
+import { useNoteStore } from '@/stores/noteStore'
 import { 
   LayoutDashboard, 
   ListTodo, 
@@ -10,9 +11,13 @@ import {
   Calendar, 
   User, 
   Plus,
-  Search
+  Search,
+  FileText,
+  CheckCircle2,
+  Circle
 } from 'lucide-react'
 import { parseCommand } from '@/lib/ai'
+import { useMemo } from 'react'
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
@@ -20,7 +25,19 @@ export function CommandPalette() {
   const [aiSuggestions, setAiSuggestions] = useState<any>(null)
   const [isParsing, setIsParsing] = useState(false)
   const navigate = useNavigate()
+  const tasks = useTaskStore(s => s.tasks)
   const addTask = useTaskStore(s => s.addTask)
+  const notes = useNoteStore(s => s.notes)
+  const addNote = useNoteStore(s => s.addNote)
+
+  const searchResults = useMemo(() => {
+    if (inputValue.trim().length < 2) return { tasks: [], notes: [] }
+    const q = inputValue.toLowerCase()
+    return {
+      tasks: tasks.filter(t => t.title.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q)).slice(0, 5),
+      notes: notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)).slice(0, 5),
+    }
+  }, [inputValue, tasks, notes])
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -61,6 +78,17 @@ export function CommandPalette() {
     } finally {
       setIsParsing(false)
     }
+  }
+
+  const handleCreateNote = () => {
+    if (!inputValue.trim()) return
+    let noteText = inputValue
+    if (noteText.toLowerCase().startsWith('note ')) {
+       noteText = noteText.substring(5)
+    }
+    
+    addNote(noteText, '') 
+    runCommand(() => navigate('/notes'))
   }
 
   // Effect to perform "live" parsing as user stops typing
@@ -145,6 +173,19 @@ export function CommandPalette() {
                   </div>
                 )}
               </Command.Item>
+              <Command.Item
+                onSelect={handleCreateNote}
+                className="data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground group transition-colors mt-1"
+                value={`create note ${inputValue}`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 group-data-[selected=true]:bg-black/20 text-primary group-data-[selected=true]:text-primary-foreground">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="font-medium">Create Quick Note</span>
+                  <span className="text-xs opacity-70 truncate">{inputValue.toLowerCase().startsWith('note ') ? inputValue.substring(5) : inputValue}</span>
+                </div>
+              </Command.Item>
             </Command.Group>
           )}
 
@@ -197,7 +238,47 @@ export function CommandPalette() {
               <User className="w-4 h-4 text-muted-foreground group-data-[selected=true]:text-accent-foreground" />
               <span>Profile</span>
             </Command.Item>
+            <Command.Item
+              onSelect={() => runCommand(() => navigate('/notes'))}
+              value="Go to Notes"
+              className="data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground group transition-colors"
+            >
+              <FileText className="w-4 h-4 text-muted-foreground group-data-[selected=true]:text-accent-foreground" />
+              <span>Notes</span>
+            </Command.Item>
           </Command.Group>
+
+          {searchResults.tasks.length > 0 && (
+            <Command.Group heading="Tasks" className="text-xs font-medium text-muted-foreground px-2 py-1.5 **:[[cmdk-item]]:rounded-xl **:[[cmdk-item]]:px-3 **:[[cmdk-item]]:py-2.5 **:[[cmdk-item]]:flex **:[[cmdk-item]]:items-center **:[[cmdk-item]]:gap-3 **:[[cmdk-item]]:cursor-pointer **:[[cmdk-item]]:text-sm **:[[cmdk-item]]:text-foreground **:[[cmdk-group-heading]]:text-left **:[[cmdk-group-heading]]:mb-2">
+              {searchResults.tasks.map(t => (
+                <Command.Item
+                  key={t.id}
+                  onSelect={() => runCommand(() => navigate('/tasks'))}
+                  value={`task-${t.id}-${t.title}`}
+                  className="data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground group transition-colors"
+                >
+                  {t.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-muted-foreground" />}
+                  <span className={t.status === 'done' ? 'line-through text-muted-foreground' : ''}>{t.title}</span>
+                </Command.Item>
+              ))}
+            </Command.Group>
+          )}
+
+          {searchResults.notes.length > 0 && (
+            <Command.Group heading="Notes" className="text-xs font-medium text-muted-foreground px-2 py-1.5 **:[[cmdk-item]]:rounded-xl **:[[cmdk-item]]:px-3 **:[[cmdk-item]]:py-2.5 **:[[cmdk-item]]:flex **:[[cmdk-item]]:items-center **:[[cmdk-item]]:gap-3 **:[[cmdk-item]]:cursor-pointer **:[[cmdk-item]]:text-sm **:[[cmdk-item]]:text-foreground **:[[cmdk-group-heading]]:text-left **:[[cmdk-group-heading]]:mb-2">
+              {searchResults.notes.map(n => (
+                <Command.Item
+                  key={n.id}
+                  onSelect={() => runCommand(() => navigate('/notes'))}
+                  value={`note-${n.id}-${n.title}`}
+                  className="data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground group transition-colors"
+                >
+                  <FileText className="w-4 h-4 text-primary" />
+                  <span>{n.title}</span>
+                </Command.Item>
+              ))}
+            </Command.Group>
+          )}
 
           <div className="h-4"></div>
         </Command.List>

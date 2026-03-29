@@ -169,3 +169,173 @@
         background-color: var(--muted-foreground);
     }
 }
+
+/* ── Markdown Prose ────────────────────────────────────────── */
+.prose-obel {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: var(--foreground);
+    word-break: break-word;
+}
+
+.prose-obel > *:first-child { margin-top: 0; }
+.prose-obel > *:last-child  { margin-bottom: 0; }
+
+/* Headings */
+.prose-obel h3,
+.prose-obel h4,
+.prose-obel h5,
+.prose-obel h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+    color: var(--foreground);
+}
+.prose-obel h3 { font-size: 1.15em; }
+.prose-obel h4 { font-size: 1.05em; }
+.prose-obel h5,
+.prose-obel h6 { font-size: 0.95em; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); }
+
+/* Paragraphs */
+.prose-obel p {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+}
+
+/* Bold & Italic */
+.prose-obel strong { font-weight: 700; color: var(--foreground); }
+.prose-obel em     { font-style: italic; }
+
+/* Links */
+.prose-obel a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    font-weight: 500;
+    transition: text-decoration-color 0.2s;
+}
+.prose-obel a:hover {
+    text-decoration-color: var(--primary);
+}
+
+/* Lists */
+.prose-obel ul,
+.prose-obel ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+}
+.prose-obel ul { list-style-type: disc; }
+.prose-obel ol { list-style-type: decimal; }
+.prose-obel li {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+.prose-obel li > ul,
+.prose-obel li > ol {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+/* Task list checkboxes (GFM) */
+.prose-obel ul:has(> li > input[type="checkbox"]) {
+    list-style: none;
+    padding-left: 0;
+}
+.prose-obel li > input[type="checkbox"] {
+    margin-right: 0.5em;
+    accent-color: var(--primary);
+    pointer-events: none;
+}
+
+/* Blockquotes */
+.prose-obel blockquote {
+    border-left: 3px solid var(--primary);
+    padding: 0.5em 1em;
+    margin: 0.75em 0;
+    background: color-mix(in srgb, var(--primary) 6%, transparent);
+    border-radius: 0 0.75rem 0.75rem 0;
+    color: var(--muted-foreground);
+    font-style: italic;
+}
+.prose-obel blockquote p {
+    margin: 0.25em 0;
+}
+
+/* Inline Code */
+.prose-obel code:not(pre code) {
+    background: var(--muted);
+    color: var(--foreground);
+    padding: 0.15em 0.4em;
+    border-radius: 0.375rem;
+    font-size: 0.85em;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Code Blocks */
+.prose-obel pre {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1em;
+    margin: 0.75em 0;
+    overflow-x: auto;
+    font-size: 0.825em;
+    line-height: 1.6;
+}
+.prose-obel pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    font-weight: 400;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Horizontal Rules */
+.prose-obel hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5em 0;
+}
+
+/* Tables (GFM) */
+.prose-obel table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75em 0;
+    font-size: 0.875em;
+}
+.prose-obel th,
+.prose-obel td {
+    border: 1px solid var(--border);
+    padding: 0.5em 0.75em;
+    text-align: left;
+}
+.prose-obel th {
+    background: var(--muted);
+    font-weight: 600;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+}
+.prose-obel tr:nth-child(even) {
+    background: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+
+/* Strikethrough (GFM) */
+.prose-obel del {
+    text-decoration: line-through;
+    color: var(--muted-foreground);
+}
+
+/* Images */
+.prose-obel img {
+    max-width: 100%;
+    border-radius: 0.75rem;
+    margin: 0.75em 0;
+}

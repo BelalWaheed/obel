@@ -16,8 +16,10 @@ import {
   X,
   CalendarClock,
   BarChart3,
+  FileText,
   Sun,
   Moon,
+  CloudOff,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
@@ -36,6 +38,7 @@ const navItems = [
   { path: '/pomodoro', icon: Timer, label: 'Pomodoro' },
   { path: '/habits', icon: Sparkles, label: 'Habits' },
   { path: '/planner', icon: CalendarClock, label: 'Planner' },
+  { path: '/notes', icon: FileText, label: 'Notes' },
   { path: '/profile', icon: User, label: 'Profile' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
@@ -254,6 +257,11 @@ export default function AppLayout() {
         className="relative hidden md:flex flex-col border-r border-border/50 bg-black/20 backdrop-blur-3xl shrink-0 z-20"
       >
         {sidebarContent}
+        {/* Sync Indicator */}
+        <div className="mt-auto pt-4 p-4 opacity-50 flex items-center gap-2 justify-center group-hover:opacity-100 transition-opacity">
+           <CloudOff className="w-4 h-4 text-muted-foreground" />
+           {!collapsed && <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden">Local Data</span>}
+        </div>
       </motion.aside>
 
       <main className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0 relative h-full z-10">

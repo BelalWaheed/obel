@@ -10,7 +10,11 @@ import {
   TrendingUp,
   Activity,
   Sparkles,
+  Download,
+  Upload,
+  ShieldCheck,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -64,6 +68,49 @@ export default function ProfilePage() {
       .filter((s) => s.mode === 'focus')
       .reduce((acc, s) => acc + s.duration, 0) / 3600
   }, [sessionHistory])
+
+  const handleExportData = () => {
+    const data = {
+      'obel-auth': localStorage.getItem('obel-auth'),
+      'obel-tasks': localStorage.getItem('obel-tasks'),
+      'obel-timer': localStorage.getItem('obel-timer'),
+      'obel-notes': localStorage.getItem('obel-notes'),
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `obel_backup_${dayjs().format('YYYY-MM-DD')}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string)
+        if (data['obel-tasks']) {
+          // Valid looking backup
+          Object.keys(data).forEach(key => {
+            if (data[key]) localStorage.setItem(key, data[key])
+          })
+          alert('Data restored successfully. The application will now reload.')
+          window.location.reload()
+        } else {
+          alert('Invalid backup file.')
+        }
+      } catch (err) {
+        alert('Error parsing backup file.')
+      }
+    }
+    reader.readAsText(file)
+  }
 
   // ---------------------------------------------------------
   // 1. Focus Time Analytics (Last 7 Days)
@@ -295,6 +342,41 @@ export default function ProfilePage() {
                 </button>
               )
             })}
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* 5. Data Management & Privacy */}
+      <motion.div variants={item} className="mt-8 pb-12">
+        <h3 className="font-semibold text-xl mb-4 flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+          Data Management & Privacy
+        </h3>
+        <Card className="p-6 md:p-8 flex flex-col md:flex-row gap-8 justify-between items-start md:items-center bg-card/40 backdrop-blur-xl border-border/40">
+          <div className="space-y-2 max-w-lg">
+            <h4 className="font-bold text-lg">Local-First Architecture</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Obel is designed with absolute privacy in mind. All your tasks, notes, and metrics are stored securely offline inside your browser. No remote databases, no tracking. To prevent data loss when clearing your browser cache, please download regular backups.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+            <Button onClick={handleExportData} className="gap-2 h-12 rounded-xl px-6 font-bold shadow-lg shadow-primary/20">
+              <Download className="w-4 h-4" />
+              Export Backup
+            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportData}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                title="Restore from backup"
+              />
+              <Button variant="outline" className="gap-2 h-12 rounded-xl px-6 font-bold w-full sm:w-auto">
+                <Upload className="w-4 h-4" />
+                Restore
+              </Button>
+            </div>
           </div>
         </Card>
       </motion.div>

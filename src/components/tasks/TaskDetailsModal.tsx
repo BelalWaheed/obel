@@ -1,14 +1,15 @@
-import { Play, Pause, Clock, Edit3, Trash2, Calendar, Flame, TagIcon, Plus, X } from 'lucide-react'
+import { Play, Pause, Clock, Edit3, Trash2, Calendar, Flame, TagIcon, Plus, X, FileText, ExternalLink, Link as LinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useTaskStore, type Task } from '@/stores/taskStore'
+import { useNoteStore } from '@/stores/noteStore'
+import { MarkdownRenderer } from '@/components/ui/markdown'
 import dayjs from 'dayjs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select'
+import { useNavigate } from 'react-router-dom'
 
 interface TaskDetailsModalProps {
   task: Task | null
@@ -25,8 +26,30 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
   const deleteSubtask = useTaskStore((state) => state.deleteSubtask)
   const lists = useTaskStore((state) => state.lists)
 
+  const navigate = useNavigate()
+  const notes = useNoteStore((state) => state.notes)
+  const addNote = useNoteStore((state) => state.addNote)
+
   if (!task) return null
 
+  const linkedNotes = notes.filter(n => task.linkedNoteIds?.includes(n.id))
+  const unlinkedNotes = notes.filter(n => !task.linkedNoteIds?.includes(n.id))
+
+  const handleAttachNote = (value: string | null) => {
+    if (!value) return
+    if (value === 'NEW') {
+      const noteId = addNote(`Notes for: ${task.title}`)
+      updateTask(task.id, { linkedNoteIds: [...(task.linkedNoteIds || []), noteId] })
+      onClose()
+      navigate('/notes')
+    } else if (value) {
+      updateTask(task.id, { linkedNoteIds: [...(task.linkedNoteIds || []), value] })
+    }
+  }
+
+  const handleUnlinkNote = (noteId: string) => {
+    updateTask(task.id, { linkedNoteIds: (task.linkedNoteIds || []).filter(id => id !== noteId) })
+  }
 
   const isDone = task.status === 'done'
   const totalSubtasks = task.subtasks.length
@@ -126,9 +149,9 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
             {task.description && (
               <div>
                 <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Description</h4>
-                <p className={`text-base leading-relaxed p-4 rounded-2xl bg-muted/20 border border-border/30 ${isDone ? 'text-muted-foreground' : 'text-foreground/90'}`}>
-                  {task.description}
-                </p>
+                <div className={`p-4 rounded-2xl bg-muted/20 border border-border/30 ${isDone ? 'opacity-60' : ''}`}>
+                  <MarkdownRenderer content={task.description} />
+                </div>
               </div>
             )}
 
@@ -198,6 +221,56 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
                       }}
                     />
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Knowledge Base / Linked Notes */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-4">
+                 <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                   <FileText className="w-3.5 h-3.5"/> Knowledge Base
+                 </h4>
+              </div>
+              <div className="space-y-2">
+                {linkedNotes.map(n => (
+                   <div key={n.id} className="flex items-center justify-between p-3 rounded-2xl bg-muted/10 border border-border/40 hover:bg-muted/30 transition-colors group">
+                     <div 
+                       className="flex items-center gap-2 flex-1 cursor-pointer"
+                       onClick={() => { onClose(); navigate('/notes'); }}
+                     >
+                       <FileText className="w-4 h-4 text-primary" />
+                       <span className="text-sm font-semibold text-foreground/90">{n.title}</span>
+                       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                     </div>
+                     {!isDone && (
+                       <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0" onClick={() => handleUnlinkNote(n.id)}>
+                         <LinkIcon className="w-3.5 h-3.5 line-through opacity-70" />
+                       </Button>
+                     )}
+                   </div>
+                ))}
+                {!isDone && (
+                   <Select onValueChange={handleAttachNote} value="">
+                     <SelectTrigger className="w-full h-10 border-dashed border-border/50 bg-transparent hover:bg-muted/30 text-muted-foreground rounded-2xl justify-center shadow-none transition-colors mt-2">
+                       <div className="flex items-center gap-2">
+                         <Plus className="w-4 h-4" /> <span className="text-xs font-bold">Attach or Create Note</span>
+                       </div>
+                     </SelectTrigger>
+                     <SelectContent className="rounded-xl border-border/50 max-h-[300px]">
+                       <SelectItem value="NEW" className="font-bold text-primary focus:text-primary focus:bg-primary/10">
+                         <div className="flex items-center gap-2"><Plus className="w-4 h-4"/> Create new note</div>
+                       </SelectItem>
+                       {unlinkedNotes.length > 0 && <SelectGroup>
+                         <SelectLabel className="text-[10px] uppercase font-bold text-muted-foreground opacity-70 mt-2">Existing Notes</SelectLabel>
+                         {unlinkedNotes.map(n => (
+                           <SelectItem key={n.id} value={n.id} className="font-medium text-sm">
+                             {n.title}
+                           </SelectItem>
+                         ))}
+                       </SelectGroup>}
+                     </SelectContent>
+                   </Select>
                 )}
               </div>
             </div>

@@ -33,6 +33,7 @@ export interface Task {
   scheduledTime?: string // e.g. "09:00"
   estimatedDuration?: number // in minutes
   listId?: string
+  linkedNoteIds?: string[]
 }
 
 // Shape coming from API (tags/subtasks are JSON strings)
@@ -50,18 +51,22 @@ interface ApiTask {
   scheduledTime?: string
   estimatedDuration?: number
   listId?: string
+  linkedNoteIds?: string
 }
 
 function parseApiTask(raw: ApiTask): Task {
   let tags: string[] = []
   let subtasks: Subtask[] = []
+  let linkedNoteIds: string[] = []
   try { tags = JSON.parse(raw.tags || '[]') } catch { /* empty */ }
   try { subtasks = JSON.parse(raw.subtasks || '[]') } catch { /* empty */ }
+  try { linkedNoteIds = JSON.parse(raw.linkedNoteIds || '[]') } catch { /* empty */ }
   return {
     ...raw,
     status: (raw.status || 'todo') as TaskStatus,
     tags,
     subtasks,
+    linkedNoteIds,
     dueDate: raw.dueDate || undefined,
     completedAt: raw.completedAt || undefined,
     scheduledTime: raw.scheduledTime || undefined,
@@ -74,6 +79,7 @@ function serializeTask(task: Partial<Task>) {
   const data: Record<string, unknown> = { ...task }
   if (task.tags !== undefined) data.tags = JSON.stringify(task.tags)
   if (task.subtasks !== undefined) data.subtasks = JSON.stringify(task.subtasks)
+  if (task.linkedNoteIds !== undefined) data.linkedNoteIds = JSON.stringify(task.linkedNoteIds)
   if (task.dueDate === null) data.dueDate = ''
   if (task.completedAt === null) data.completedAt = ''
   if (task.scheduledTime === null) data.scheduledTime = ''
@@ -146,8 +152,9 @@ export const useTaskStore = create<TaskState>()(
       ...taskData,
       id: tempId,
       createdAt: new Date().toISOString(),
-      subtasks: [],
+      subtasks: taskData.subtasks || [],
       tags: taskData.tags || [],
+      linkedNoteIds: taskData.linkedNoteIds || [],
       status: 'todo',
       userId,
     } as Task

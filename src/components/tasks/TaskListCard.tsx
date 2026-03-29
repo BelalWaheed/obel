@@ -95,7 +95,11 @@ export function TaskListCard({ listId, title, tasks, onTaskClick, onStartFocus }
                   <p className="text-muted-foreground font-medium italic">No tasks in this list</p>
                 </div>
               ) : (
-                tasks.map((task) => {
+                [...tasks].sort((a, b) => {
+                  if (a.status === 'done' && b.status !== 'done') return 1;
+                  if (a.status !== 'done' && b.status === 'done') return -1;
+                  return 0;
+                }).map((task) => {
                   const isDone = task.status === 'done'
                   const totalSubtasks = task.subtasks?.length || 0
                   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0

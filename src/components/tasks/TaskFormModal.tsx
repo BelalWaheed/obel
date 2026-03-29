@@ -205,11 +205,12 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
           <div>
             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">Description (What's the plan?)</label>
             <textarea
-              placeholder="Context, notes, or long-term vision..."
+              placeholder="Context, notes, or long-term vision... (supports **markdown**)"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
-              className="flex min-h-[90px] w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 resize-none font-medium transition-all" 
+              className="flex min-h-[90px] w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 resize-none font-medium transition-all font-mono" 
             />
+            <p className="text-[10px] text-muted-foreground/50 mt-1 pl-1">Supports **bold**, *italic*, `code`, lists, links, and more</p>
           </div>
 
           <div>

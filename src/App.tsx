@@ -11,6 +11,7 @@ import ProfilePage from '@/pages/ProfilePage'
 import ArchivePage from '@/pages/ArchivePage'
 import PlannerPage from '@/pages/PlannerPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
+import NotesPage from '@/pages/NotesPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import PWAUpdater from '@/components/layout/PWAUpdater'
 
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/archive" element={<ArchivePage />} />
             <Route path="/planner" element={<PlannerPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/notes" element={<NotesPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
