@@ -30,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu'
 import { useNoteStore, NOTE_COLORS, NOTE_TEMPLATES, type NoteColor, type Note } from '@/stores/noteStore'
 import { MarkdownRenderer } from '@/components/ui/markdown'
@@ -241,12 +242,14 @@ export default function NotesPage() {
                   <span className="w-5 mr-2 text-center text-lg leading-none">+</span> Blank Note
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-border/40" />
-                <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Templates</DropdownMenuLabel>
-                {NOTE_TEMPLATES.map((tmpl, idx) => (
-                  <DropdownMenuItem key={tmpl.name} onClick={() => handleNewNote(idx)} className="cursor-pointer font-medium py-1.5 hidden sm:flex">
-                     <span className="w-5 mr-2 text-center">{tmpl.icon}</span> {tmpl.name}
-                  </DropdownMenuItem>
-                ))}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Templates</DropdownMenuLabel>
+                  {NOTE_TEMPLATES.map((tmpl, idx) => (
+                    <DropdownMenuItem key={tmpl.name} onClick={() => handleNewNote(idx)} className="cursor-pointer font-medium py-1.5 hidden sm:flex">
+                       <span className="w-5 mr-2 text-center">{tmpl.icon}</span> {tmpl.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -279,14 +282,22 @@ export default function NotesPage() {
                 {filteredNotes.map((note) => {
                   const colorConfig = NOTE_COLORS[note.color || 'none']
                   return (
-                  <motion.button
+                  <motion.div
                     layout
                     key={note.id}
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleSelectNote(note.id)}
-                    className={`w-full text-left p-3.5 rounded-2xl transition-all duration-200 group relative border-l-4 ${colorConfig.bg || 'border-l-transparent'} ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleSelectNote(note.id)
+                      }
+                    }}
+                    className={`w-full text-left p-3.5 rounded-2xl transition-all duration-200 group relative border-l-4 cursor-pointer ${colorConfig.bg || 'border-l-transparent'} ${
                       activeNoteId === note.id
                         ? 'bg-primary/10 border-t-primary/20 border-r-primary/20 border-b-primary/20 shadow-sm'
                         : 'hover:bg-muted/40 border-t-transparent border-r-transparent border-b-transparent'
@@ -334,7 +345,7 @@ export default function NotesPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                  </motion.button>
+                  </motion.div>
                 )})}
               </AnimatePresence>
             </div>
