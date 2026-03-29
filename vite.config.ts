@@ -12,7 +12,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: [ 'obel.jpg'],
+      includeAssets: [ 'obel.png'],
       manifest: {
         name: 'Obel Focus',
         short_name: 'Obel',
@@ -22,15 +22,15 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'obel.jpg',
+            src: 'obel.png',
             sizes: '192x192 512x512',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'obel.jpg',
+            src: 'obel.png',
             sizes: '192x192 512x512',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'maskable'
           }
         ],
@@ -40,21 +40,21 @@ export default defineConfig({
             short_name: 'New',
             description: 'Quickly create a new task',
             url: '/tasks?action=new',
-            icons: [{ src: 'obel.jpg', sizes: '192x192' }]
+            icons: [{ src: 'obel.png', sizes: '192x192', type: 'image/png' }]
           },
           {
             name: 'Daily Planner',
             short_name: 'Planner',
             description: 'View your schedule for today',
             url: '/planner',
-            icons: [{ src: 'obel.jpg', sizes: '192x192' }]
+            icons: [{ src: 'obel.png', sizes: '192x192', type: 'image/png' }]
           },
           {
             name: 'Pomodoro',
             short_name: 'Focus',
             description: 'Start a focus session',
             url: '/pomodoro',
-            icons: [{ src: 'obel.jpg', sizes: '192x192' }]
+            icons: [{ src: 'obel.png', sizes: '192x192', type: 'image/png' }]
           }
         ]
       },

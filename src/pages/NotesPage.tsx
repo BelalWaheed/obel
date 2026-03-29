@@ -18,7 +18,6 @@ import {
   List,
   Code,
   CheckSquare,
-  Columns,
   Palette
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -50,7 +49,7 @@ export default function NotesPage() {
 
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('split')
+  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
   const [showSidebar, setShowSidebar] = useState(true)
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<HTMLTextAreaElement>(null)
@@ -60,19 +59,6 @@ export default function NotesPage() {
   const [draftContent, setDraftContent] = useState('')
 
   const sortedNotes = useMemo(() => getSortedNotes(), [notes, getSortedNotes])
-
-  // Handle responsive view mode
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024 && viewMode === 'split') {
-        setViewMode('edit')
-      }
-    }
-    window.addEventListener('resize', handleResize)
-    handleResize() // init
-    return () => window.removeEventListener('resize', handleResize)
-  }, [viewMode])
-
 
   const filteredNotes = useMemo(() => {
     if (!search.trim()) return sortedNotes
@@ -126,7 +112,7 @@ export default function NotesPage() {
       setActiveNoteId(id)
     }
     
-    if (window.innerWidth < 1024) setViewMode('edit')
+    setViewMode('edit')
     setShowSidebar(false)
     setTimeout(() => titleRef.current?.focus(), 100)
   }
@@ -371,9 +357,6 @@ export default function NotesPage() {
                   <button onClick={() => setViewMode('preview')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'preview' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                     <Eye className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Preview</span>
                   </button>
-                  <button onClick={() => setViewMode('split')} className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'split' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                    <Columns className="w-3.5 h-3.5" /> Split
-                  </button>
                 </div>
               </div>
 
@@ -424,8 +407,8 @@ export default function NotesPage() {
               />
             </div>
 
-            {/* Markdown Toolbar (only in edit or split mode) */}
-            {(viewMode === 'edit' || viewMode === 'split') && (
+            {/* Markdown Toolbar (only in edit mode) */}
+            {viewMode === 'edit' && (
               <div className="flex items-center gap-1 px-4 py-1.5 border-b border-border/20 bg-muted/10 shrink-0 overflow-x-auto custom-scrollbar">
                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground" onClick={() => insertText('**', '**')} title="Bold (Ctrl+B)">
                    <Bold className="w-3.5 h-3.5" />
@@ -452,11 +435,11 @@ export default function NotesPage() {
             )}
 
             {/* Content Area */}
-            <div className={`flex-1 overflow-hidden flex ${viewMode === 'split' ? 'flex-row' : 'flex-col'}`}>
+            <div className="flex-1 overflow-hidden flex flex-col">
               
               {/* Editor */}
-              {(viewMode === 'edit' || viewMode === 'split') && (
-                <div className={`flex-1 overflow-auto p-5 ${viewMode === 'split' ? 'border-r border-border/30 w-1/2' : 'w-full'}`}>
+              {viewMode === 'edit' && (
+                <div className="flex-1 overflow-auto p-5 w-full">
                   <textarea
                     ref={editorRef}
                     value={draftContent}
@@ -470,8 +453,8 @@ export default function NotesPage() {
               )}
 
               {/* Preview */}
-              {(viewMode === 'preview' || viewMode === 'split') && (
-                <div className={`flex-1 overflow-auto p-6 ${viewMode === 'split' ? 'w-1/2 bg-muted/5' : 'w-full'}`}>
+              {viewMode === 'preview' && (
+                <div className="flex-1 overflow-auto p-6 w-full">
                   {draftContent.trim() ? (
                     <MarkdownRenderer content={draftContent} />
                   ) : (
