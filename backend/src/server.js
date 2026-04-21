@@ -10,12 +10,20 @@ const app = express()
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
 app.use(express.json())
 
-app.use('/_/backend/users',  usersRouter)
-app.use('/_/backend/tasks',  tasksRouter)
-app.use('/_/backend/habits', habitsRouter)
-app.use('/_/backend/coffee', coffeeRouter)
+// Create a versioned router to handle multiple prefixes easily
+const apiRouter = express.Router()
 
-app.get('/_/backend/health', (_req, res) => res.json({ status: 'ok' }))
+apiRouter.use('/users', usersRouter)
+apiRouter.use('/tasks', tasksRouter)
+apiRouter.use('/habits', habitsRouter)
+apiRouter.use('/coffee', coffeeRouter)
+apiRouter.get('/health', (_req, res) => res.json({ status: 'ok' }))
+
+// Mount the apiRouter at various possible locations to ensure compatibility
+// handle /api/users, /_/backend/users, and /users (if prefix is stripped)
+app.use('/api', apiRouter)
+app.use('/_/backend', apiRouter)
+app.use('/', apiRouter)
 
 // Local dev server — Vercel uses the default export directly
 if (process.env.NODE_ENV !== 'production') {
