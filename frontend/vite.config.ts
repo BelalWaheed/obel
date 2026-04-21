@@ -180,44 +180,10 @@ export default defineConfig({
     
   ],
   build: {
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (
-              id.includes("react") || 
-              id.includes("react-dom") || 
-              id.includes("react-router") ||
-              id.includes("zustand")
-            ) {
-              return "vendor-framework";
-            }
-            if (id.includes("@google/generative-ai")) {
-              return "vendor-ai";
-            }
-            if (
-              id.includes("react-markdown") || 
-              id.includes("remark") || 
-              id.includes("rehype") || 
-              id.includes("unified")
-            ) {
-              return "vendor-markdown";
-            }
-            if (
-              id.includes("framer-motion") || 
-              id.includes("lucide") || 
-              id.includes("@radix-ui") || 
-              id.includes("cmdk") ||
-              id.includes("canvas-confetti")
-            ) {
-              return "vendor-ui";
-            }
-            if (id.includes("recharts") || id.includes("d3")) {
-              return "vendor-charts";
-            }
-            return "vendor";
-          }
-        },
+        // We'll use React.lazy instead of manual Rollup chunks for stability
       },
     },
   },
