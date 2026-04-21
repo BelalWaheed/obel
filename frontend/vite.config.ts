@@ -184,26 +184,36 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router")) {
+            if (
+              id.includes("react") || 
+              id.includes("react-dom") || 
+              id.includes("react-router") ||
+              id.includes("zustand")
+            ) {
               return "vendor-framework";
             }
             if (id.includes("@google/generative-ai")) {
               return "vendor-ai";
             }
-            if (id.includes("react-markdown") || id.includes("remark") || id.includes("rehype") || id.includes("unified")) {
+            if (
+              id.includes("react-markdown") || 
+              id.includes("remark") || 
+              id.includes("rehype") || 
+              id.includes("unified")
+            ) {
               return "vendor-markdown";
             }
-            if (id.includes("framer-motion")) {
-              return "vendor-animation";
+            if (
+              id.includes("framer-motion") || 
+              id.includes("lucide") || 
+              id.includes("@radix-ui") || 
+              id.includes("cmdk") ||
+              id.includes("canvas-confetti")
+            ) {
+              return "vendor-ui";
             }
             if (id.includes("recharts") || id.includes("d3")) {
               return "vendor-charts";
-            }
-            if (id.includes("lucide") || id.includes("@radix-ui") || id.includes("cmdk")) {
-              return "vendor-ui";
-            }
-            if (id.includes("zustand") || id.includes("dayjs") || id.includes("clsx") || id.includes("tailwind-merge")) {
-              return "vendor-utils";
             }
             return "vendor";
           }
