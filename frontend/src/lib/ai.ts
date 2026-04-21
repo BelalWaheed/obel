@@ -48,16 +48,16 @@ async function safeCall(prompt: string): Promise<string> {
 }
 
 /**
- * Generates a list of subtasks for a given objective using Gemini.
+ * Generates a list of subtasks for a given task using Gemini.
  */
-export async function generateSubtasks(objective: string): Promise<AISubtask[]> {
+export async function generateSubtasks(task: string): Promise<AISubtask[]> {
   if (!model || isAiServiceUnavailable) {
-    return simulateSubtasks(objective);
+    return simulateSubtasks(task);
   }
 
   try {
-    const prompt = `Break down the following productivity objective into 3-5 actionable subtasks. 
-    Objective: "${objective}"
+    const prompt = `Break down the following productivity task into 3-5 actionable subtasks. 
+    Task: "${task}"
     
     Return ONLY a JSON array of objects with the following structure:
     [{"title": "Step 1", "estimatedDuration": 15}, ...]
@@ -68,7 +68,7 @@ export async function generateSubtasks(objective: string): Promise<AISubtask[]> 
     const jsonStr = text.replace(/```json|```/g, "").trim();
     return JSON.parse(jsonStr);
   } catch {
-    return simulateSubtasks(objective);
+    return simulateSubtasks(task);
   }
 }
 
@@ -137,8 +137,8 @@ export async function parseCommand(input: string): Promise<{
 /**
  * Fallback simulation logic
  */
-function simulateSubtasks(objective: string): AISubtask[] {
-  const normalized = objective.toLowerCase();
+function simulateSubtasks(task: string): AISubtask[] {
+  const normalized = task.toLowerCase();
   if (normalized.includes('code') || normalized.includes('build')) {
     return [
       { title: 'Outline architecture', estimatedDuration: 20 },

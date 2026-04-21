@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Play,
   Pause,
@@ -10,6 +10,7 @@ import {
   Coffee,
   Zap,
   Link2,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -203,12 +204,6 @@ export default function PomodoroPage() {
                   {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                 </div>
                 <p className={`text-sm font-medium mt-2 ${config.color}`}>{config.label}</p>
-                {activeTask && (
-                  <div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-background/50 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground max-w-[200px]">
-                    <Link2 className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate font-medium">{activeTask.title}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -239,23 +234,84 @@ export default function PomodoroPage() {
         </>
       )}
 
-      {/* Link Task */}
-      <div className="flex justify-center">
-        <Select value={activeTaskId || 'none'} onValueChange={(v) => setActiveTaskId(v === 'none' ? null : v)}>
-          <SelectTrigger className="w-[280px] h-11 bg-card border-border/50 shadow-sm rounded-xl">
-            <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-primary" />
-              <SelectValue placeholder="Select a task to focus on..." />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No specific task</SelectItem>
-            {activeTasks.map((task) => (
-              <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+      {/* Link Task Section */}
+      <div className="max-w-md mx-auto w-full">
+        <AnimatePresence mode="wait">
+          {!activeTaskId ? (
+            <motion.div
+              key="select-task"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <p className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/50">Focus Objective</p>
+              <Select value="none" onValueChange={(v) => setActiveTaskId(v === 'none' ? null : v)}>
+                <SelectTrigger className="w-full h-12 bg-card/40 border-border/40 shadow-sm rounded-2xl backdrop-blur-xl hover:bg-card/60 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <Link2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <SelectValue placeholder="Link a task to this session..." />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-card/95 backdrop-blur-2xl border-border/50 rounded-2xl">
+                  <SelectItem value="none" className="text-muted-foreground">Standalone Session</SelectItem>
+                  {activeTasks.map((task) => (
+                    <SelectItem key={task.id} value={task.id} className="py-3">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">{task.title}</span>
+                        <span className="text-[10px] text-muted-foreground">{task.focusSessions || 0} sessions completed</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="active-task-card"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative p-5 rounded-3xl bg-primary/3 border border-primary/20 backdrop-blur-xl overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setActiveTaskId(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="mt-1 p-2.5 rounded-2xl bg-primary/10 border border-primary/20 shadow-inner">
+                  <Zap className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0 pr-8">
+                  <p className="text-[10px] uppercase tracking-widest font-black text-primary/60 mb-1">Tracking Progress</p>
+                  <h3 className="text-xl font-bold tracking-tight truncate mb-3">{activeTask?.title}</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="px-3 py-1.5 rounded-xl bg-background/50 border border-border/50 flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none mb-1">Sessions</span>
+                      <span className="text-sm font-black tabular-nums">{activeTask?.focusSessions || 0}</span>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-xl bg-background/50 border border-border/50 flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none mb-1">Status</span>
+                      <span className="text-sm font-bold text-primary capitalize">{activeTask?.status}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
 
       {/* Stats Table */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">

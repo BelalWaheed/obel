@@ -55,7 +55,7 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
     name: 'Project Brief',
     icon: '🚀',
     title: 'Project Brief',
-    content: `# Project Brief\n\n## Overview\n\n\n## Objectives\n1. \n2. \n3. \n\n## Scope\n\n\n## Timeline\n| Phase | Deadline | Status |\n|-------|----------|--------|\n| Planning | | 🟡 |\n| Development | | ⬜ |\n| Testing | | ⬜ |\n| Launch | | ⬜ |\n\n## Resources\n- \n\n## Risks\n- \n`,
+    content: `# Project Brief\n\n## Overview\n\n\n## Tasks\n1. \n2. \n3. \n\n## Scope\n\n\n## Timeline\n| Phase | Deadline | Status |\n|-------|----------|--------|\n| Planning | | 🟡 |\n| Development | | ⬜ |\n| Testing | | ⬜ |\n| Launch | | ⬜ |\n\n## Resources\n- \n\n## Risks\n- \n`,
   },
   {
     name: 'Quick List',

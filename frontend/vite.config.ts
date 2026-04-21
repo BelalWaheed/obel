@@ -183,7 +183,14 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // We'll use React.lazy instead of manual Rollup chunks for stability
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('recharts')) return 'vendor-recharts';
+            if (id.includes('framer-motion')) return 'vendor-framer';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            return 'vendor';
+          }
+        }
       },
     },
   },

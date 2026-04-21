@@ -87,13 +87,13 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
       <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-border/50 bg-card/95 backdrop-blur-2xl rounded-3xl z-100">
         <div className="px-6 py-5 border-b border-border/50 bg-muted/20">
           <DialogTitle className="text-2xl font-bold tracking-tight">
-            {editingTask ? 'Edit Task' : 'Define New Objective'}
+            {editingTask ? 'Edit Task' : 'Define New Task'}
           </DialogTitle>
         </div>
         <div className="px-6 py-6 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Objective Title</label>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Task Title</label>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -228,7 +228,7 @@ export function TaskFormModal({ isOpen, onClose, editingTask }: TaskFormModalPro
           <Button className="h-11 px-7 rounded-xl font-black text-sm gap-2 shadow-lg shadow-primary/25" onClick={handleSave} disabled={!formTitle.trim() || isSaving}>
             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
-                {editingTask ? 'Save Changes' : 'Create Objective'}
+                {editingTask ? 'Save Changes' : 'Create Task'}
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

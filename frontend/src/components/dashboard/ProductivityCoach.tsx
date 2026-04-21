@@ -102,7 +102,7 @@ export function ProductivityCoach() {
         list.push({
           id: 'generic-tip',
           title: 'Coach Tip',
-          message: "Breaking large tasks into smaller subtasks can reduce completion friction by 40%. Try adding subtasks to complex objectives.",
+          message: "Breaking large tasks into smaller subtasks can reduce completion friction by 40%. Try adding subtasks to complex tasks.",
           type: 'tip',
           icon: Quote
         })

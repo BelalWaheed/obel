@@ -88,7 +88,7 @@ export default function CalendarPage() {
               Calendar
             </h1>
             <p className="text-muted-foreground mt-1 text-sm font-medium">
-              Strategic mapping of your deadlines and objectives.
+              Strategic mapping of your deadlines and tasks.
             </p>
           </div>
         </div>

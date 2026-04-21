@@ -588,7 +588,7 @@ export default function ProfilePage() {
               <div className="text-center py-12 border-2 border-dashed border-border/30 rounded-2xl">
                 <Archive className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-muted-foreground">No archived items</h3>
-                <p className="text-xs text-muted-foreground/60">Your completed objectives will appear here.</p>
+                <p className="text-xs text-muted-foreground/60">Your completed tasks will appear here.</p>
               </div>
             ) : (
               archivedTasks.map((task) => (

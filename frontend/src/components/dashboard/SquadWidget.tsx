@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/stores/authStore'
-import confetti from 'canvas-confetti'
+// import confetti from 'canvas-confetti'
 
 export function SquadWidget() {
   const user = useAuthStore(s => s.user)
@@ -23,11 +23,13 @@ export function SquadWidget() {
 
   const handleCheer = () => {
     setHasCheered(true)
-    confetti({
-      particleCount: 80,
-      spread: 60,
-      origin: { y: 0.8 },
-      colors: ['#ef4444', '#ec4899', '#f43f5e'] // pink/reds
+    import('canvas-confetti').then((confetti) => {
+      confetti.default({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.8 },
+        colors: ['#ef4444', '#ec4899', '#f43f5e'] // pink/reds
+      })
     })
     setTimeout(() => setHasCheered(false), 3000)
   }

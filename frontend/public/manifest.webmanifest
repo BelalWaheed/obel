@@ -35,7 +35,7 @@
   ],
   "shortcuts": [
     {
-      "name": "New Objective",
+      "name": "New Task",
       "short_name": "New",
       "description": "Quickly create a new task",
       "url": "/tasks?action=new",
