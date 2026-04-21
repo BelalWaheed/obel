@@ -89,11 +89,27 @@ function serializeTask(task: Partial<Task>) {
  */
 function mergeTasks(apiTasks: Task[], localTasks: Task[], userId: string): Task[] {
   const apiIds = new Set(apiTasks.map((t) => t.id))
-  // Keep local tasks that: belong to this user AND aren't yet in the API result
-  // ONLY if they have a temp-ID (unsynced). Real IDs missing from API were likely deleted elsewhere.
-  const localOnly = localTasks.filter(
-    (t) => t.userId === userId && !apiIds.has(t.id) && t.id.startsWith('temp-')
-  )
+  const apiTitles = new Set(apiTasks.map((t) => `${t.title}|${t.createdAt}`))
+
+  // Keep local tasks that:
+  // 1. Belong to this user
+  // 2. Aren't already in the API result by ID
+  // 3. Aren't already in the API result by Content (Title+Date) if they are temp-ID tasks
+  const localOnly = localTasks.filter((t) => {
+    if (t.userId !== userId) return false
+    if (apiIds.has(t.id)) return false
+    
+    // If it's a temp task, also check if an identical task exists in API
+    if (t.id.startsWith('temp-')) {
+      if (apiTitles.has(`${t.title}|${t.createdAt}`)) return false
+    } else {
+      // If it's a real ID but not in API, it was likely deleted on another device
+      return false
+    }
+
+    return true
+  })
+
   return [...apiTasks, ...localOnly]
 }
 

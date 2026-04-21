@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { db } = await connectToDatabase()
-    const habit = { ...req.body, id: crypto.randomUUID() }
+    const habit = { ...req.body, id: req.body.id || crypto.randomUUID() }
     await db.collection('habits').insertOne(habit)
     const { _id, ...result } = habit
     res.status(201).json(result)

@@ -80,10 +80,20 @@ function calculateStreaks(dates: string[]): {
 /** Merge API habits with local habits for offline-first. */
 function mergeHabits(apiHabits: Habit[], localHabits: Habit[], userId: string): Habit[] {
   const apiIds = new Set(apiHabits.map((h) => h.id))
-  // Keep local habits missing from the API only if they have a temp-ID (unsynced).
-  const localOnly = localHabits.filter(
-    (h) => h.userId === userId && !apiIds.has(h.id) && h.id.startsWith('temp-')
-  )
+  const apiNames = new Set(apiHabits.map((h) => `${h.name}|${h.createdAt}`))
+
+  const localOnly = localHabits.filter((h) => {
+    if (h.userId !== userId) return false
+    if (apiIds.has(h.id)) return false
+    
+    if (h.id.startsWith('temp-')) {
+      if (apiNames.has(`${h.name}|${h.createdAt}`)) return false
+    } else {
+      return false
+    }
+    return true
+  })
+
   return [...apiHabits, ...localOnly]
 }
 

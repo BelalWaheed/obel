@@ -13,6 +13,27 @@ export interface CoffeeEntry {
   timestamp: string
 }
 
+function mergeLogs(apiLogs: CoffeeEntry[], localLogs: CoffeeEntry[], userId: string): CoffeeEntry[] {
+  const apiIds = new Set(apiLogs.map((l) => l.id))
+  const apiKeys = new Set(apiLogs.map((l) => `${l.type}|${l.timestamp}`))
+
+  const localOnly = localLogs.filter((l) => {
+    if (l.userId !== userId) return false
+    if (apiIds.has(l.id)) return false
+    
+    if (l.id.startsWith('temp-')) {
+      if (apiKeys.has(`${l.type}|${l.timestamp}`)) return false
+    } else {
+      return false
+    }
+    return true
+  })
+
+  return [...apiLogs, ...localOnly].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
+}
+
 interface CoffeeState {
   logs: CoffeeEntry[]
   isLoading: boolean
@@ -37,12 +58,17 @@ export const useCoffeeStore = create<CoffeeState>()(
       fetchLogs: async () => {
         const userId = useAuthStore.getState().user?.id
         if (!userId) return
-        set({ isLoading: true, error: null })
+
+        const hasLocal = get().logs.some((l) => l.userId === userId)
+        if (!hasLocal) set({ isLoading: true, error: null })
+
         try {
           const raw = await apiGet<CoffeeEntry[]>(`/coffee?userId=${userId}`)
-          set({ logs: Array.isArray(raw) ? raw : [], isLoading: false })
+          const apiLogs = Array.isArray(raw) ? raw : []
+          const merged = mergeLogs(apiLogs, get().logs, userId)
+          set({ logs: merged, isLoading: false, error: null })
         } catch {
-          set({ error: 'Failed to fetch coffee logs', isLoading: false })
+          set({ isLoading: false, error: null })
         }
       },
 
@@ -50,15 +76,22 @@ export const useCoffeeStore = create<CoffeeState>()(
         const userId = useAuthStore.getState().user?.id
         if (!userId) return
         
-        const newEntry = {
+        const tempId = `temp-${crypto.randomUUID()}`
+        const newEntry: CoffeeEntry = {
           ...data,
+          id: tempId,
           userId,
           timestamp: new Date().toISOString(),
         }
 
+        // Optimistic update
+        set((s) => ({ logs: [newEntry, ...s.logs] }))
+
         try {
           const saved = await apiPost<CoffeeEntry>('/coffee', newEntry)
-          set((s) => ({ logs: [...s.logs, saved] }))
+          set((s) => ({ 
+            logs: s.logs.map((l) => (l.id === tempId ? saved : l))
+          }))
           
           // Surprize! Confetti for coffee logging
           import('canvas-confetti').then((confetti) => {
@@ -82,7 +115,7 @@ export const useCoffeeStore = create<CoffeeState>()(
             navigator.vibrate(20)
           }
         } catch (err: unknown) {
-          console.error('Failed to log coffee:', err)
+          console.warn('Network error: coffee log stored locally for background sync')
         }
       },
 

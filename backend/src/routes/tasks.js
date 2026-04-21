@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { db } = await connectToDatabase()
-    const task = { ...req.body, id: crypto.randomUUID() }
+    const task = { ...req.body, id: req.body.id || crypto.randomUUID() }
     await db.collection('tasks').insertOne(task)
     const { _id, ...result } = task
     res.status(201).json(result)
