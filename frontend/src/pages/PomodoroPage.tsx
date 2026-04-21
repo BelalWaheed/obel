@@ -277,7 +277,7 @@ export default function PomodoroPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative p-5 rounded-3xl bg-primary/3 border border-primary/20 backdrop-blur-xl overflow-hidden group"
             >
-              <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-0 right-0 p-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -370,7 +370,7 @@ export default function PomodoroPage() {
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader><DialogTitle>Timer Settings</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-2 ">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Focus Duration (minutes)</label>
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -403,7 +403,7 @@ export default function PomodoroPage() {
               <label className="text-sm font-medium mb-1.5 block">Long Break After (sessions)</label>
               <Input type="number" min={2} max={10} value={localInterval} onChange={(e) => setLocalInterval(Number(e.target.value))} />
             </div>
-            <div className="space-y-3">
+            <div className="">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={autoBreaks} onChange={(e) => setAutoBreaks(e.target.checked)} className="rounded" />
                 Auto-start breaks
