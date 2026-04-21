@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { connectToDatabase } from '../lib/mongodb.js'
+import { connectToDatabase } from '../../lib/mongodb.js'
 
 const router = Router()
 
