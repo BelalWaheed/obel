@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/obel.png" />
+  <link rel="apple-touch-icon" href="/obel.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+
+  <!--
+      viewport-fit=cover is CRITICAL for iPhone notch / Dynamic Island.
+      Without it, safe-area-inset-* CSS env() values are always 0.
+    -->
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <!-- iOS PWA meta -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Obel" />
+
+  <!-- Splash Screens (iOS) -->
+  <link rel="apple-touch-startup-image" href="/obel.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/obel.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/obel.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/obel.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/obel.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+
+  <!-- Primary SEO -->
+  <title>Obel</title>
+  <meta name="description"
+    content="Obel is your minimalist productivity companion for deep work, habit tracking, and coffee-fueled focus sessions." />
+  <meta name="keywords"
+    content="productivity, focus, pomodoro timer, habit tracker, task management, kanban board, onyx design, studio focus" />
+
+  <!-- Theme color — matches dark background -->
+  <meta name="theme-color" content="#1e1423" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f8f4fa" media="(prefers-color-scheme: light)" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Obel" />
+  <meta property="og:description"
+    content="Obel is your minimalist productivity companion for deep work, habit tracking, and coffee-fueled focus sessions." />
+  <meta property="og:image" content="/obel.png" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Obel" />
+  <meta name="twitter:description"
+    content="Obel is your minimalist productivity companion for deep work, habit tracking, and coffee-fueled focus sessions." />
+  <meta name="twitter:image" content="/obel.png" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Obel",
+        "operatingSystem": "Web",
+        "applicationCategory": "ProductivityApplication",
+        "description": "Premium productivity and focus application featuring tasks, pomodoro, and habits.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

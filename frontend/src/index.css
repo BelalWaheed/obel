@@ -1,0 +1,849 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Readex+Pro:wght@200;300;400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VARIANT
+───────────────────────────────────────────────────────────────────────────── */
+@custom-variant dark (&:is(.dark *));
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* ─────────────────────────────────────────────────────────────────────────────
+   THEME — maps CSS variables → Tailwind utility tokens
+   Only keeps mappings Tailwind v4 doesn't auto-generate from @theme.
+───────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+    --font-heading: 'Readex Pro', 'Inter', var(--font-sans);
+    --font-sans:    'Inter', system-ui, sans-serif;
+    --font-arabic:  'Readex Pro', sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+    /* Sidebar tokens */
+    --color-sidebar-ring:               var(--sidebar-ring);
+    --color-sidebar-border:             var(--sidebar-border);
+    --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+    --color-sidebar-accent:             var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary:            var(--sidebar-primary);
+    --color-sidebar-foreground:         var(--sidebar-foreground);
+    --color-sidebar:                    var(--sidebar);
+
+    /* Chart tokens */
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+
+    /* Core tokens */
+    --color-ring:                var(--ring);
+    --color-input:               var(--input);
+    --color-border:              var(--border);
+    --color-destructive:         var(--destructive);
+    --color-accent-foreground:   var(--accent-foreground);
+    --color-accent:              var(--accent);
+    --color-muted-foreground:    var(--muted-foreground);
+    --color-muted:               var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary:           var(--secondary);
+    --color-primary-foreground:  var(--primary-foreground);
+    --color-primary:             var(--primary);
+    --color-popover-foreground:  var(--popover-foreground);
+    --color-popover:             var(--popover);
+    --color-card-foreground:     var(--card-foreground);
+    --color-card:                var(--card);
+    --color-foreground:          var(--foreground);
+    --color-background:          var(--background);
+
+    /* Radius scale */
+    --radius-sm:  calc(var(--radius) * 0.6);
+    --radius-md:  calc(var(--radius) * 0.8);
+    --radius-lg:  var(--radius);
+    --radius-xl:  calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DESIGN TOKENS — default (Obel purple)
+   Single source of truth. Every theme overrides this complete set.
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+    /* Layout */
+    --radius:     0.75rem;
+    --nav-height: 4rem;          /* ← one place to change nav height globally */
+
+    /* Core palette */
+    --background:          #f8f4fa;
+    --foreground:          #180e1b;
+    --card:                #ffffff;
+    --card-foreground:     #180e1b;
+    --popover:             #ffffff;
+    --popover-foreground:  #180e1b;
+    --primary:             #492e56;
+    --primary-foreground:  #f8f4fa;
+    --secondary:           #a9c492;
+    --secondary-foreground: #180e1b;
+    --muted:               #ece4f0;
+    --muted-foreground:    #6b5d70;
+    --accent:              #509570;
+    --accent-foreground:   #f8f4fa;
+    --destructive:         #df4444;
+    --destructive-foreground: #ffffff;
+    --border:              #dfd4e2;
+    --input:               #dfd4e2;
+    --ring:                #492e56;
+
+    /* Sidebar */
+    --sidebar:                    #f8f4fa;
+    --sidebar-foreground:         #180e1b;
+    --sidebar-primary:            #492e56;
+    --sidebar-primary-foreground: #f8f4fa;
+    --sidebar-accent:             #ece4f0;
+    --sidebar-accent-foreground:  #180e1b;
+    --sidebar-border:             #dfd4e2;
+    --sidebar-ring:               #492e56;
+
+    /* Charts (placeholder — tune per brand) */
+    --chart-1: #492e56;
+    --chart-2: #509570;
+    --chart-3: #a9c492;
+    --chart-4: #c4aad1;
+    --chart-5: #dfd4e2;
+
+    /* Safe-area insets (iOS PWA) */
+    --safe-area-top:    env(safe-area-inset-top,    0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left:   env(safe-area-inset-left,   0px);
+    --safe-area-right:  env(safe-area-inset-right,  0px);
+
+    /* color-scheme: tells the browser to render native UI (scrollbars,
+       inputs, selects) in light mode to match the theme */
+    color-scheme: light;
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────────────── */
+.dark {
+    --background:          #292030;
+    --foreground:          #f0eaf2;
+    --card:                #33273b;
+    --card-foreground:     #f0eaf2;
+    --popover:             #33273b;
+    --popover-foreground:  #f0eaf2;
+    --primary:             #c4aad1;
+    --primary-foreground:  #292030;
+    --secondary:           #526d3b;
+    --secondary-foreground: #f0eaf2;
+    --muted:               #3a2c43;
+    --muted-foreground:    #a698aa;
+    --accent:              #6caf8b;
+    --accent-foreground:   #292030;
+    --destructive:         #ef4444;
+    --destructive-foreground: #ffffff;
+    --border:              #493852;
+    --input:               #493852;
+    --ring:                #c4aad1;
+
+    --sidebar:                    #292030;
+    --sidebar-foreground:         #f0eaf2;
+    --sidebar-primary:            #c4aad1;
+    --sidebar-primary-foreground: #292030;
+    --sidebar-accent:             #3a2c43;
+    --sidebar-accent-foreground:  #f0eaf2;
+    --sidebar-border:             #3a2c43;
+    --sidebar-ring:               #c4aad1;
+
+    --chart-1: #c4aad1;
+    --chart-2: #6caf8b;
+    --chart-3: #526d3b;
+    --chart-4: #492e56;
+    --chart-5: #35283c;
+
+    color-scheme: dark;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CUSTOM THEMES
+   Each theme is COMPLETE — overrides every token that diverges from the base.
+   Applied as: <html class="theme-emerald"> or <html class="theme-emerald dark">
+───────────────────────────────────────────────────────────────────────────── */
+
+/* 1. Emerald — Nature */
+.theme-emerald {
+    --background:          #f0fdf4;
+    --foreground:          #052e16;
+    --card:                #ffffff;
+    --card-foreground:     #052e16;
+    --popover:             #ffffff;
+    --popover-foreground:  #052e16;
+    --primary:             #10b981;
+    --primary-foreground:  #ffffff;
+    --secondary:           #bbf7d0;
+    --secondary-foreground: #052e16;
+    --muted:               #dcfce7;
+    --muted-foreground:    #166534;
+    --accent:              #059669;
+    --accent-foreground:   #ffffff;
+    --border:              #bbf7d0;
+    --input:               #bbf7d0;
+    --ring:                #10b981;
+    --sidebar:             #f0fdf4;
+    --sidebar-foreground:  #052e16;
+    --sidebar-primary:     #10b981;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent:      #dcfce7;
+    --sidebar-accent-foreground:  #052e16;
+    --sidebar-border:      #bbf7d0;
+    --sidebar-ring:        #10b981;
+    --chart-1: #10b981;
+    --chart-2: #059669;
+    --chart-3: #34d399;
+    --chart-4: #6ee7b7;
+    --chart-5: #bbf7d0;
+    color-scheme: light;
+}
+.theme-emerald.dark {
+    --background:          #022c22;
+    --foreground:          #d1fae5;
+    --card:                #064e3b;
+    --card-foreground:     #d1fae5;
+    --popover:             #064e3b;
+    --popover-foreground:  #d1fae5;
+    --primary:             #34d399;
+    --primary-foreground:  #022c22;
+    --secondary:           #065f46;
+    --secondary-foreground: #d1fae5;
+    --muted:               #064e3b;
+    --muted-foreground:    #6ee7b7;
+    --accent:              #10b981;
+    --accent-foreground:   #022c22;
+    --border:              #065f46;
+    --input:               #065f46;
+    --ring:                #34d399;
+    --sidebar:             #022c22;
+    --sidebar-foreground:  #d1fae5;
+    --sidebar-primary:     #34d399;
+    --sidebar-primary-foreground: #022c22;
+    --sidebar-accent:      #064e3b;
+    --sidebar-accent-foreground:  #d1fae5;
+    --sidebar-border:      #065f46;
+    --sidebar-ring:        #34d399;
+    --chart-1: #34d399;
+    --chart-2: #10b981;
+    --chart-3: #059669;
+    --chart-4: #065f46;
+    --chart-5: #022c22;
+    color-scheme: dark;
+}
+
+/* 2. Midnight — Ocean */
+.theme-midnight {
+    --background:          #f0f9ff;
+    --foreground:          #082f49;
+    --card:                #ffffff;
+    --card-foreground:     #082f49;
+    --popover:             #ffffff;
+    --popover-foreground:  #082f49;
+    --primary:             #0ea5e9;
+    --primary-foreground:  #ffffff;
+    --secondary:           #bae6fd;
+    --secondary-foreground: #082f49;
+    --muted:               #e0f2fe;
+    --muted-foreground:    #0369a1;
+    --accent:              #0284c7;
+    --accent-foreground:   #ffffff;
+    --border:              #bae6fd;
+    --input:               #bae6fd;
+    --ring:                #0ea5e9;
+    --sidebar:             #f0f9ff;
+    --sidebar-foreground:  #082f49;
+    --sidebar-primary:     #0ea5e9;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent:      #e0f2fe;
+    --sidebar-accent-foreground:  #082f49;
+    --sidebar-border:      #bae6fd;
+    --sidebar-ring:        #0ea5e9;
+    --chart-1: #0ea5e9;
+    --chart-2: #0284c7;
+    --chart-3: #38bdf8;
+    --chart-4: #7dd3fc;
+    --chart-5: #bae6fd;
+    color-scheme: light;
+}
+.theme-midnight.dark {
+    --background:          #082f49;
+    --foreground:          #e0f2fe;
+    --card:                #0c4a6e;
+    --card-foreground:     #e0f2fe;
+    --popover:             #0c4a6e;
+    --popover-foreground:  #e0f2fe;
+    --primary:             #38bdf8;
+    --primary-foreground:  #082f49;
+    --secondary:           #075985;
+    --secondary-foreground: #e0f2fe;
+    --muted:               #0c4a6e;
+    --muted-foreground:    #7dd3fc;
+    --accent:              #0ea5e9;
+    --accent-foreground:   #082f49;
+    --border:              #075985;
+    --input:               #075985;
+    --ring:                #38bdf8;
+    --sidebar:             #082f49;
+    --sidebar-foreground:  #e0f2fe;
+    --sidebar-primary:     #38bdf8;
+    --sidebar-primary-foreground: #082f49;
+    --sidebar-accent:      #0c4a6e;
+    --sidebar-accent-foreground:  #e0f2fe;
+    --sidebar-border:      #075985;
+    --sidebar-ring:        #38bdf8;
+    --chart-1: #38bdf8;
+    --chart-2: #0ea5e9;
+    --chart-3: #0284c7;
+    --chart-4: #075985;
+    --chart-5: #082f49;
+    color-scheme: dark;
+}
+
+/* 3. Nord — Arctic */
+.theme-nord {
+    --background:          #eceff4;
+    --foreground:          #2e3440;
+    --card:                #ffffff;
+    --card-foreground:     #2e3440;
+    --popover:             #ffffff;
+    --popover-foreground:  #2e3440;
+    --primary:             #5e81ac;
+    --primary-foreground:  #eceff4;
+    --secondary:           #d8dee9;
+    --secondary-foreground: #2e3440;
+    --muted:               #e5e9f0;
+    --muted-foreground:    #4c566a;
+    --accent:              #88c0d0;
+    --accent-foreground:   #2e3440;
+    --border:              #d8dee9;
+    --input:               #d8dee9;
+    --ring:                #5e81ac;
+    --sidebar:             #eceff4;
+    --sidebar-foreground:  #2e3440;
+    --sidebar-primary:     #5e81ac;
+    --sidebar-primary-foreground: #eceff4;
+    --sidebar-accent:      #e5e9f0;
+    --sidebar-accent-foreground:  #2e3440;
+    --sidebar-border:      #d8dee9;
+    --sidebar-ring:        #5e81ac;
+    --chart-1: #5e81ac;
+    --chart-2: #88c0d0;
+    --chart-3: #81a1c1;
+    --chart-4: #8fbcbb;
+    --chart-5: #d8dee9;
+    color-scheme: light;
+}
+.theme-nord.dark {
+    --background:          #2e3440;
+    --foreground:          #eceff4;
+    --card:                #3b4252;
+    --card-foreground:     #eceff4;
+    --popover:             #3b4252;
+    --popover-foreground:  #eceff4;
+    --primary:             #88c0d0;
+    --primary-foreground:  #2e3440;
+    --secondary:           #434c5e;
+    --secondary-foreground: #eceff4;
+    --muted:               #3b4252;
+    --muted-foreground:    #d8dee9;
+    --accent:              #81a1c1;
+    --accent-foreground:   #2e3440;
+    --border:              #434c5e;
+    --input:               #434c5e;
+    --ring:                #88c0d0;
+    --sidebar:             #2e3440;
+    --sidebar-foreground:  #eceff4;
+    --sidebar-primary:     #88c0d0;
+    --sidebar-primary-foreground: #2e3440;
+    --sidebar-accent:      #3b4252;
+    --sidebar-accent-foreground:  #eceff4;
+    --sidebar-border:      #434c5e;
+    --sidebar-ring:        #88c0d0;
+    --chart-1: #88c0d0;
+    --chart-2: #81a1c1;
+    --chart-3: #5e81ac;
+    --chart-4: #434c5e;
+    --chart-5: #3b4252;
+    color-scheme: dark;
+}
+
+/* 4. Sunset — Warm */
+.theme-sunset {
+    --background:          #fff7ed;
+    --foreground:          #431407;
+    --card:                #ffffff;
+    --card-foreground:     #431407;
+    --popover:             #ffffff;
+    --popover-foreground:  #431407;
+    --primary:             #f97316;
+    --primary-foreground:  #ffffff;
+    --secondary:           #fed7aa;
+    --secondary-foreground: #431407;
+    --muted:               #ffedd5;
+    --muted-foreground:    #9a3412;
+    --accent:              #ea580c;
+    --accent-foreground:   #ffffff;
+    --border:              #fed7aa;
+    --input:               #fed7aa;
+    --ring:                #f97316;
+    --sidebar:             #fff7ed;
+    --sidebar-foreground:  #431407;
+    --sidebar-primary:     #f97316;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent:      #ffedd5;
+    --sidebar-accent-foreground:  #431407;
+    --sidebar-border:      #fed7aa;
+    --sidebar-ring:        #f97316;
+    --chart-1: #f97316;
+    --chart-2: #ea580c;
+    --chart-3: #fb923c;
+    --chart-4: #fdba74;
+    --chart-5: #fed7aa;
+    color-scheme: light;
+}
+.theme-sunset.dark {
+    --background:          #431407;
+    --foreground:          #ffedd5;
+    --card:                #7c2d12;
+    --card-foreground:     #ffedd5;
+    --popover:             #7c2d12;
+    --popover-foreground:  #ffedd5;
+    --primary:             #fb923c;
+    --primary-foreground:  #431407;
+    --secondary:           #9a3412;
+    --secondary-foreground: #ffedd5;
+    --muted:               #7c2d12;
+    --muted-foreground:    #fdba74;
+    --accent:              #f97316;
+    --accent-foreground:   #431407;
+    --border:              #9a3412;
+    --input:               #9a3412;
+    --ring:                #fb923c;
+    --sidebar:             #431407;
+    --sidebar-foreground:  #ffedd5;
+    --sidebar-primary:     #fb923c;
+    --sidebar-primary-foreground: #431407;
+    --sidebar-accent:      #7c2d12;
+    --sidebar-accent-foreground:  #ffedd5;
+    --sidebar-border:      #9a3412;
+    --sidebar-ring:        #fb923c;
+    --chart-1: #fb923c;
+    --chart-2: #f97316;
+    --chart-3: #ea580c;
+    --chart-4: #9a3412;
+    --chart-5: #7c2d12;
+    color-scheme: dark;
+}
+
+/* 5. Dracula — Goth */
+.theme-dracula {
+    --background:          #f8f8f2;
+    --foreground:          #282a36;
+    --card:                #ffffff;
+    --card-foreground:     #282a36;
+    --popover:             #ffffff;
+    --popover-foreground:  #282a36;
+    --primary:             #bd93f9;
+    --primary-foreground:  #282a36;
+    --secondary:           #e6e6e6;
+    --secondary-foreground: #282a36;
+    --muted:               #f0f0f0;
+    --muted-foreground:    #6272a4;
+    --accent:              #ff79c6;
+    --accent-foreground:   #282a36;
+    --border:              #e6e6e6;
+    --input:               #e6e6e6;
+    --ring:                #bd93f9;
+    --sidebar:             #f8f8f2;
+    --sidebar-foreground:  #282a36;
+    --sidebar-primary:     #bd93f9;
+    --sidebar-primary-foreground: #282a36;
+    --sidebar-accent:      #f0f0f0;
+    --sidebar-accent-foreground:  #282a36;
+    --sidebar-border:      #e6e6e6;
+    --sidebar-ring:        #bd93f9;
+    --chart-1: #bd93f9;
+    --chart-2: #ff79c6;
+    --chart-3: #50fa7b;
+    --chart-4: #ffb86c;
+    --chart-5: #8be9fd;
+    color-scheme: light;
+}
+.theme-dracula.dark {
+    --background:          #282a36;
+    --foreground:          #f8f8f2;
+    --card:                #44475a;
+    --card-foreground:     #f8f8f2;
+    --popover:             #44475a;
+    --popover-foreground:  #f8f8f2;
+    --primary:             #bd93f9;
+    --primary-foreground:  #282a36;
+    --secondary:           #6272a4;
+    --secondary-foreground: #f8f8f2;
+    --muted:               #44475a;
+    --muted-foreground:    #6272a4;
+    --accent:              #ff79c6;
+    --accent-foreground:   #282a36;
+    --border:              #6272a4;
+    --input:               #6272a4;
+    --ring:                #bd93f9;
+    --sidebar:             #282a36;
+    --sidebar-foreground:  #f8f8f2;
+    --sidebar-primary:     #bd93f9;
+    --sidebar-primary-foreground: #282a36;
+    --sidebar-accent:      #44475a;
+    --sidebar-accent-foreground:  #f8f8f2;
+    --sidebar-border:      #6272a4;
+    --sidebar-ring:        #bd93f9;
+    --chart-1: #bd93f9;
+    --chart-2: #ff79c6;
+    --chart-3: #50fa7b;
+    --chart-4: #ffb86c;
+    --chart-5: #8be9fd;
+    color-scheme: dark;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RTL — Arabic font applied via dir attribute, not class
+───────────────────────────────────────────────────────────────────────────── */
+[dir="rtl"] {
+    font-family: var(--font-arabic);
+    letter-spacing: 0; /* Arabic script doesn't use letter-spacing */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE LAYER
+───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+    *,
+    *::before,
+    *::after {
+        @apply border-border outline-ring/50;
+        box-sizing: border-box;
+    }
+
+    html {
+        @apply scroll-smooth;
+        font-family: var(--font-sans);
+        /* Required for iOS PWA full-height */
+        height: -webkit-fill-available;
+        /* Smooth font rendering */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground antialiased relative;
+        font-family: var(--font-sans);
+        overflow-x: hidden;
+        overscroll-behavior: none;
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+
+        /*  ⚠️  user-select removed from body — only disable on chrome elements
+            (nav, buttons, tabs) via `select-none` utility where needed.
+            Body text, headings, and prose must remain selectable. */
+    }
+
+    /* Re-enable selection where it was disabled globally before */
+    input,
+    textarea,
+    [contenteditable] {
+        user-select: text;
+        -webkit-user-select: text;
+    }
+
+    /* Branded watermark — subtle but visible */
+    body::before {
+        content: "Obel";
+        position: fixed;
+        inset: -50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 25vw;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: var(--foreground);       /* responds to dark mode */
+        opacity: 0.03;                  /* was 0.012 — effectively invisible */
+        z-index: -1;
+        pointer-events: none;
+        white-space: nowrap;
+        transform: rotate(-12deg);
+        user-select: none;
+        -webkit-user-select: none;
+        letter-spacing: -0.05em;
+    }
+
+    /* Focus ring — accessible, visible, on-brand */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Tap highlight removal for mobile */
+    a, button {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Thin cross-browser scrollbar */
+    * {
+        /* Firefox */
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+    ::-webkit-scrollbar       { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+        background-color: var(--border);
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--muted-foreground);
+    }
+
+    /* Typography baseline */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-heading);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PWA / STANDALONE
+───────────────────────────────────────────────────────────────────────────── */
+@media (display-mode: standalone) {
+    body {
+        padding-top: var(--safe-area-top);
+    }
+
+    .standalone-bottom-pad {
+        padding-bottom: var(--safe-area-bottom);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION
+   Must wrap every animation/transition added later.
+───────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   UTILITY LAYER — safe-area, nav, scrollbar variants
+───────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+    .pb-safe {
+        padding-bottom: max(var(--safe-area-bottom), 0.5rem);
+    }
+    .pt-safe {
+        padding-top: var(--safe-area-top);
+    }
+    .mb-safe {
+        margin-bottom: var(--safe-area-bottom);
+    }
+
+    /* References --nav-height so a single variable controls both nav and offset */
+    .pb-nav {
+        padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom));
+    }
+
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--border) 70%, transparent) transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar       { width: 3px; height: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: color-mix(in srgb, var(--border) 70%, transparent);
+        border-radius: 10px;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MARKDOWN PROSE — .prose-obel
+───────────────────────────────────────────────────────────────────────────── */
+.prose-obel {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: var(--foreground);
+    /* overflow-wrap replaces deprecated word-break: break-word */
+    overflow-wrap: break-word;
+    word-break: break-word; /* keep for CJK compatibility */
+    /* Comfortable reading measure */
+    max-width: 72ch;
+}
+
+.prose-obel > *:first-child { margin-top: 0; }
+.prose-obel > *:last-child  { margin-bottom: 0; }
+
+.prose-obel h3,
+.prose-obel h4,
+.prose-obel h5,
+.prose-obel h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+    color: var(--foreground);
+    text-rendering: optimizeLegibility;
+}
+.prose-obel h3 { font-size: 1.15em; }
+.prose-obel h4 { font-size: 1.05em; }
+.prose-obel h5,
+.prose-obel h6 {
+    font-size: 0.95em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+}
+
+.prose-obel p {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+}
+
+.prose-obel strong { font-weight: 700; color: var(--foreground); }
+.prose-obel em     { font-style: italic; }
+
+.prose-obel a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    font-weight: 500;
+    transition: text-decoration-color 0.2s ease;
+}
+.prose-obel a:hover {
+    text-decoration-color: var(--primary);
+}
+
+.prose-obel ul,
+.prose-obel ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+}
+.prose-obel ul { list-style-type: disc; }
+.prose-obel ol { list-style-type: decimal; }
+.prose-obel li {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+.prose-obel li > ul,
+.prose-obel li > ol {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+/* Task-list checkboxes */
+.prose-obel ul:has(> li > input[type="checkbox"]) {
+    list-style: none;
+    padding-left: 0;
+}
+.prose-obel li > input[type="checkbox"] {
+    margin-right: 0.5em;
+    accent-color: var(--primary);
+    pointer-events: none;
+}
+
+.prose-obel blockquote {
+    border-left: 3px solid var(--primary);
+    padding: 0.5em 1em;
+    margin: 0.75em 0;
+    background: color-mix(in srgb, var(--primary) 6%, transparent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    color: var(--muted-foreground);
+    font-style: italic;
+}
+.prose-obel blockquote p {
+    margin: 0.25em 0;
+}
+
+.prose-obel code:not(pre code) {
+    background: var(--muted);
+    color: var(--foreground);
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-sm);
+    font-size: 0.85em;
+    font-weight: 500;
+    font-family: var(--font-mono);
+}
+
+.prose-obel pre {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1em;
+    margin: 0.75em 0;
+    overflow-x: auto;
+    font-size: 0.825em;
+    line-height: 1.6;
+}
+.prose-obel pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    font-weight: 400;
+    font-family: var(--font-mono);
+}
+
+.prose-obel hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5em 0;
+}
+
+.prose-obel table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75em 0;
+    font-size: 0.875em;
+}
+.prose-obel th,
+.prose-obel td {
+    border: 1px solid var(--border);
+    padding: 0.5em 0.75em;
+    text-align: left;
+}
+.prose-obel th {
+    background: var(--muted);
+    font-weight: 600;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+}
+.prose-obel tr:nth-child(even) {
+    background: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+
+.prose-obel del {
+    text-decoration: line-through;
+    color: var(--muted-foreground);
+}
+
+.prose-obel img {
+    max-width: 100%;
+    border-radius: var(--radius);
+    margin: 0.75em 0;
+}
