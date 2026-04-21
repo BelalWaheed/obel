@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -25,12 +25,14 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTimerStore, type TimerMode } from '@/stores/timerStore'
 import { useHabitStore } from '@/stores/habitStore'
-import { CommandPalette } from '@/components/CommandPalette'
 import { LevelBadge } from '@/components/ui/LevelBadge'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
-import { LevelUpModal } from '../ui/LevelUpModal'
 import { UndoToast } from '@/components/ui/UndoToast'
 import { useThemeStore } from '@/stores/themeStore'
+
+// Lazy loaded layout components
+const CommandPalette = lazy(() => import('@/components/CommandPalette').then(m => ({ default: m.CommandPalette })))
+const LevelUpModal = lazy(() => import('../ui/LevelUpModal').then(m => ({ default: m.LevelUpModal })))
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -73,6 +75,8 @@ export default function AppLayout() {
   const timerSeconds = timerRemaining % 60
   const timerDisplay = `${String(timerMinutes).padStart(2, '0')}:${String(timerSeconds).padStart(2, '0')}`
 
+  const isTimerHydrated = useTimerStore((s) => s._hasHydrated)
+
   // Online / offline detection
   useEffect(() => {
     const onOnline = () => setIsOnline(true)
@@ -84,6 +88,17 @@ export default function AppLayout() {
       window.removeEventListener('offline', onOffline)
     }
   }, [])
+
+  // Visibility change handling for timer
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isTimerHydrated) {
+        resumeTick()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [isTimerHydrated, resumeTick])
 
   // Tab title timer
   useEffect(() => {
@@ -105,8 +120,10 @@ export default function AppLayout() {
     fetchTasks()
     loadFromUser()
     fetchHabits()
-    resumeTick()
-  }, [fetchTasks, loadFromUser, fetchHabits, resumeTick])
+    if (isTimerHydrated) {
+      resumeTick()
+    }
+  }, [fetchTasks, loadFromUser, fetchHabits, resumeTick, isTimerHydrated])
 
   // Sync Global Theme Class from Profile
   useEffect(() => {
@@ -382,16 +399,20 @@ export default function AppLayout() {
         </AnimatePresence>
       </main>
 
-      <CommandPalette />
+      <Suspense fallback={null}>
+        <CommandPalette />
+      </Suspense>
       <InstallBanner />
       <UndoToast />
       
       {user && (
-        <LevelUpModal 
-          isOpen={showLevelUp} 
-          onClose={() => setShowLevelUp(false)} 
-          level={user.level} 
-        />
+        <Suspense fallback={null}>
+          <LevelUpModal 
+            isOpen={showLevelUp} 
+            onClose={() => setShowLevelUp(false)} 
+            level={user.level} 
+          />
+        </Suspense>
       )}
     </div>
   )

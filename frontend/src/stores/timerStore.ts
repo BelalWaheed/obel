@@ -48,6 +48,8 @@ interface TimerState {
   loadFromUser: () => Promise<void>
   saveToUser: () => Promise<void>
   resumeTick: () => void
+  _hasHydrated: boolean
+  setHasHydrated: (val: boolean) => void
 }
 
 let globalTimerInterval: ReturnType<typeof setInterval> | null = null
@@ -56,8 +58,13 @@ function startGlobalTick() {
   if (globalTimerInterval) return
   globalTimerInterval = setInterval(() => {
     const state = useTimerStore.getState()
-    if (state.isRunning) state.tick()
-  }, 500) // 500ms for snappier UI
+    if (state.isRunning) {
+      // Only tick if the page is visible to save CPU/Battery
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        state.tick()
+      }
+    }
+  }, 1000) // 1s is enough for background logic, UI can interpolate if needed
 }
 
 function stopGlobalTick() {
@@ -370,7 +377,11 @@ export const useTimerStore = create<TimerState>()(
       // ── CRITICAL FIX: handle timer that expired while app was closed ──
       resumeTick: () => {
         const { isRunning, expectedEndTime, mode, settings } = get()
-        if (!isRunning || !expectedEndTime) return
+        if (!isRunning || !expectedEndTime) {
+          // If we are not running, but we have a timer interval, clear it
+          if (!isRunning) stopGlobalTick()
+          return
+        }
 
         const now = Date.now()
 
@@ -382,7 +393,7 @@ export const useTimerStore = create<TimerState>()(
         } else {
           // Still running — sync remaining time with wall clock and resume
           const remaining = Math.ceil((expectedEndTime - now) / 1000)
-          set({ timeRemaining: remaining })
+          set({ timeRemaining: remaining, isRunning: true })
           startGlobalTick()
 
           // Re-schedule the notification with the correct remaining time
@@ -403,17 +414,28 @@ export const useTimerStore = create<TimerState>()(
               )
             })
           }
+          
+          // Re-request wake lock if we are resuming an active timer
+          wakeLockSystem.request()
         }
       },
+
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'obel-timer',
       storage: createJSONStorage(() => indexedDBStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
       partialize: (state) => ({
         settings: state.settings,
         sessionsCompleted: state.sessionsCompleted,
         sessionHistory: state.sessionHistory,
-        timeRemaining: state.timeRemaining,
+        // CRITICAL: We no longer persist timeRemaining every 500ms.
+        // Instead, we recalculate it from expectedEndTime on resume.
+        // This saves massive amounts of Disk I/O and battery.
         mode: state.mode,
         activeTaskId: state.activeTaskId,
         expectedEndTime: state.expectedEndTime,

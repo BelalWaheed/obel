@@ -203,7 +203,18 @@ export default function PomodoroPage() {
                 <div className="text-6xl font-bold tracking-tighter tabular-nums">
                   {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                 </div>
-                <p className={`text-sm font-medium mt-2 ${config.color}`}>{config.label}</p>
+                <div className="flex flex-col items-center mt-2">
+                  <p className={`text-sm font-medium ${config.color}`}>{config.label}</p>
+                  {isRunning && useTimerStore.getState().expectedEndTime && (
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1"
+                    >
+                      Ends at {new Date(useTimerStore.getState().expectedEndTime!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </motion.p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
