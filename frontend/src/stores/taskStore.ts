@@ -208,6 +208,8 @@ export const useTaskStore = create<TaskState>()(
 
         try {
           const payload = serializeTask(tempTask)
+          // Omit temp ID so the server generates a real one
+          delete (payload as any).id 
           const raw = await apiPost<ApiTask>('/tasks', payload)
           const task = { ...tempTask, ...parseApiTask(raw) } as Task
           set((s) => ({ tasks: s.tasks.map((t) => (t.id === tempId ? task : t)) }))

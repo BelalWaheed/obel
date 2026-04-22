@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
     const now = new Date().toISOString()
     const task = { 
       ...req.body, 
-      id: req.body.id || crypto.randomUUID(),
+      id: (req.body.id && !req.body.id.startsWith('temp-')) ? req.body.id : crypto.randomUUID(),
       createdAt: req.body.createdAt || now,
       updatedAt: now
     }
