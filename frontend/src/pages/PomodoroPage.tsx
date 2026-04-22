@@ -11,6 +11,7 @@ import {
   Zap,
   Link2,
   X,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -59,6 +60,7 @@ export default function PomodoroPage() {
   const setMode = useTimerStore((s) => s.setMode)
   const updateSettings = useTimerStore((s) => s.updateSettings)
   const setActiveTaskId = useTimerStore((s) => s.setActiveTaskId)
+  const completeSession = useTimerStore((s) => s.completeSession)
 
   const tasks = useTaskStore((s) => s.tasks)
   const activeTasks = useMemo(() => tasks.filter((t) => t.status !== 'done'), [tasks])
@@ -237,6 +239,15 @@ export default function PomodoroPage() {
             </Button>
             <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={skip} title="Skip">
               <SkipForward className="w-5 h-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-12 w-12 rounded-xl hover:bg-primary/10 hover:text-primary transition-all" 
+              onClick={() => completeSession()} 
+              title="Finish Early"
+            >
+              <Check className="w-5 h-5" />
             </Button>
             <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={openSettings} title="Settings">
               <Settings2 className="w-5 h-5" />

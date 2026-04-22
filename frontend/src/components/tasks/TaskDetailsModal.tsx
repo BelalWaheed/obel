@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useTaskStore, type Task } from '@/stores/taskStore'
+import { useTimerStore } from '@/stores/timerStore'
 import { useNoteStore } from '@/stores/noteStore'
 import { MarkdownRenderer } from '@/components/ui/markdown'
 import dayjs from 'dayjs'
@@ -28,6 +29,7 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
   const addTask = useTaskStore((state) => state.addTask)
   const lists = useTaskStore((state) => state.lists)
   const showToast = useToastStore((s) => s.showToast)
+  const completeSession = useTimerStore((s) => s.completeSession)
 
   const navigate = useNavigate()
   const notes = useNoteStore((state) => state.notes)
@@ -138,6 +140,21 @@ export function TaskDetailsModal({ task, onClose, onEdit, onStartFocus }: TaskDe
                   <div className="flex items-center gap-1.5">
                     <Flame className="w-4 h-4" />
                     <span>{task.focusSessions} Sessions</span>
+                    {!isDone && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 ml-1 rounded-full hover:bg-primary/20 text-primary transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          completeSession(undefined, task.id);
+                          showToast(`Logged session for ${task.title}`);
+                        }}
+                        title="Add focus session"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    )}
                   </div>
                   <div className="w-px h-4 bg-current opacity-30" />
                   <div className="flex items-center gap-1.5">

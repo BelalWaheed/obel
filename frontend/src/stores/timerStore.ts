@@ -46,6 +46,7 @@ interface TimerState {
   tick: () => void
   updateSettings: (settings: Partial<PomodoroSettings>) => Promise<void>
   setActiveTaskId: (taskId: string | null) => void
+  completeSession: (manualDuration?: number, taskId?: string) => void
   loadFromUser: () => Promise<void>
   saveToUser: () => Promise<void>
   resumeTick: () => void
@@ -203,10 +204,6 @@ export const useTimerStore = create<TimerState>()(
         const {
           expectedEndTime,
           isRunning,
-          mode,
-          settings,
-          sessionsCompleted,
-          activeTaskId,
         } = get()
         if (!isRunning || !expectedEndTime) return
 
@@ -217,17 +214,40 @@ export const useTimerStore = create<TimerState>()(
         if (remaining > 0) return
 
         // ── Session completed ──────────────────────────────────────────
-        stopGlobalTick()
+        get().completeSession()
+      },
 
-        const finalDuration =
-          mode === 'coffeeBreak' ? 5 * 60 : getDurationForMode(mode, settings)
+      completeSession: (manualDuration, taskId) => {
+        const {
+          mode,
+          settings,
+          sessionsCompleted,
+          activeTaskId,
+          timeRemaining,
+          isRunning
+        } = get()
+
+        const targetTaskId = taskId ?? activeTaskId
+
+        // Stop current timer if running and we are completing the ACTIVE task
+        if (isRunning && (!taskId || taskId === activeTaskId)) {
+          stopGlobalTick()
+          const userId = useAuthStore.getState().user?.id
+          notificationSystem.cancelScheduled('obel-timer', userId)
+        }
+
+        const finalDuration = manualDuration ?? (
+          (isRunning && (!taskId || taskId === activeTaskId))
+            ? (getDurationForMode(mode, settings) - timeRemaining)
+            : (mode === 'coffeeBreak' ? 5 * 60 : getDurationForMode(mode, settings))
+        )
 
         // Credit focus time to active task
-        if (mode === 'focus' && activeTaskId) {
+        if (mode === 'focus' && targetTaskId) {
           const task = useTaskStore
             .getState()
-            .tasks.find((t) => t.id === activeTaskId)
-          useTaskStore.getState().updateTask(activeTaskId, {
+            .tasks.find((t) => t.id === targetTaskId)
+          useTaskStore.getState().updateTask(targetTaskId, {
             focusSessions: (task?.focusSessions || 0) + 1,
             focusTime: (task?.focusTime || 0) + finalDuration,
           })
@@ -287,6 +307,7 @@ export const useTimerStore = create<TimerState>()(
         if (settings.soundEnabled) {
           import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playChime())
         }
+
         if (settings.notificationsEnabled) {
           const userId = useAuthStore.getState().user?.id
           const title = nextMode === 'focus' ? 'Break Over!' : 'Session Complete!'

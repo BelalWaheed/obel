@@ -40,7 +40,7 @@ export function UndoToast() {
           initial={{ opacity: 0, y: 100, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-100 w-[calc(100%-2rem)] max-w-sm"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-200 w-[calc(100%-2rem)] max-w-sm"
         >
           <div className="relative overflow-hidden bg-foreground text-background rounded-2xl shadow-2xl p-4 flex items-center justify-between gap-4 border border-white/10 group">
             <div className="flex items-center gap-3">
