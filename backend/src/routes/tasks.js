@@ -22,7 +22,13 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { db } = await connectToDatabase()
-    const task = { ...req.body, id: req.body.id || crypto.randomUUID() }
+    const now = new Date().toISOString()
+    const task = { 
+      ...req.body, 
+      id: req.body.id || crypto.randomUUID(),
+      createdAt: req.body.createdAt || now,
+      updatedAt: now
+    }
     await db.collection('tasks').insertOne(task)
     const { _id, ...result } = task
     res.status(201).json(result)
@@ -36,7 +42,8 @@ router.put('/:id', async (req, res) => {
   try {
     const { db } = await connectToDatabase()
     const { id } = req.params
-    const update = { ...req.body, id }
+    const now = new Date().toISOString()
+    const update = { ...req.body, id, updatedAt: now }
     delete update._id
     await db.collection('tasks').updateOne({ id }, { $set: update }, { upsert: true })
     res.json(update)

@@ -5,6 +5,7 @@ import usersRouter from './routes/users.js'
 import tasksRouter from './routes/tasks.js'
 import habitsRouter from './routes/habits.js'
 import coffeeRouter from './routes/coffee.js'
+import notificationsRouter from './routes/notifications.js'
 
 const app = express()
 
@@ -18,6 +19,7 @@ apiRouter.use('/users', usersRouter)
 apiRouter.use('/tasks', tasksRouter)
 apiRouter.use('/habits', habitsRouter)
 apiRouter.use('/coffee', coffeeRouter)
+apiRouter.use('/notifications', notificationsRouter)
 apiRouter.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
 // Mount the apiRouter at various possible locations to ensure compatibility

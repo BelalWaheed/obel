@@ -28,6 +28,7 @@ export interface Task {
   status: 'todo' | 'in-progress' | 'done'
   dueDate?: string
   createdAt: string
+  updatedAt?: string
   completedAt?: string
   userId: string
   focusSessions?: number
@@ -42,39 +43,40 @@ interface ApiTask {
   id: string
   title: string
   description: string
-  tags: string
-  subtasks: string
+  tags: string[]
+  subtasks: Subtask[]
   status: string
   dueDate: string
   createdAt: string
+  updatedAt?: string
   completedAt: string
   userId: string
   scheduledTime?: string
   estimatedDuration?: number
   listId?: string
-  linkedNoteIds?: string
+  linkedNoteIds?: string[]
 }
 
 function parseApiTask(raw: ApiTask): Partial<Task> {
   const result: Partial<Task> = { ...raw } as any
-  if (raw.tags) {
-    try { result.tags = JSON.parse(raw.tags) } catch { /* ignore */ }
+  
+  // Backwards compatibility: if data is still stringified in DB, parse it
+  if (typeof raw.subtasks === 'string') {
+    try { result.subtasks = JSON.parse(raw.subtasks) } catch { result.subtasks = [] }
   }
-  if (raw.subtasks) {
-    try { result.subtasks = JSON.parse(raw.subtasks) } catch { /* ignore */ }
+  if (typeof raw.tags === 'string') {
+    try { result.tags = JSON.parse(raw.tags) } catch { result.tags = [] }
   }
-  if (raw.linkedNoteIds) {
-    try { result.linkedNoteIds = JSON.parse(raw.linkedNoteIds) } catch { /* ignore */ }
+  if (typeof raw.linkedNoteIds === 'string') {
+    try { result.linkedNoteIds = JSON.parse(raw.linkedNoteIds) } catch { result.linkedNoteIds = [] }
   }
+
   if (raw.status) result.status = raw.status as TaskStatus
   return result
 }
 
 function serializeTask(task: Partial<Task>) {
   const data: Record<string, unknown> = { ...task }
-  if (task.tags !== undefined) data.tags = JSON.stringify(task.tags)
-  if (task.subtasks !== undefined) data.subtasks = JSON.stringify(task.subtasks)
-  if (task.linkedNoteIds !== undefined) data.linkedNoteIds = JSON.stringify(task.linkedNoteIds)
   if (task.dueDate === null) data.dueDate = ''
   if (task.completedAt === null) data.completedAt = ''
   if (task.scheduledTime === null) data.scheduledTime = ''
@@ -88,29 +90,38 @@ function serializeTask(task: Partial<Task>) {
  *    work is never silently discarded.
  */
 function mergeTasks(apiTasks: Task[], localTasks: Task[], userId: string): Task[] {
-  const apiIds = new Set(apiTasks.map((t) => t.id))
-  const apiTitles = new Set(apiTasks.map((t) => `${t.title}|${t.createdAt}`))
+  const apiMap = new Map(apiTasks.map((t) => [t.id, t]))
+  const localMap = new Map(localTasks.map((t) => [t.id, t]))
+  
+  const mergedIds = new Set([...apiMap.keys(), ...localMap.keys()])
+  const result: Task[] = []
 
-  // Keep local tasks that:
-  // 1. Belong to this user
-  // 2. Aren't already in the API result by ID
-  // 3. Aren't already in the API result by Content (Title+Date) if they are temp-ID tasks
-  const localOnly = localTasks.filter((t) => {
-    if (t.userId !== userId) return false
-    if (apiIds.has(t.id)) return false
-    
-    // If it's a temp task, also check if an identical task exists in API
-    if (t.id.startsWith('temp-')) {
-      if (apiTitles.has(`${t.title}|${t.createdAt}`)) return false
-    } else {
-      // If it's a real ID but not in API, it was likely deleted on another device
-      return false
+  for (const id of mergedIds) {
+    const api = apiMap.get(id)
+    const local = localMap.get(id)
+
+    if (api && local) {
+      // Both exist: pick the newer one
+      const apiTime = new Date(api.updatedAt || api.createdAt).getTime()
+      const localTime = new Date(local.updatedAt || local.createdAt).getTime()
+      
+      if (apiTime >= localTime) {
+        result.push(api)
+      } else {
+        result.push(local)
+      }
+    } else if (api) {
+      // Only in API: keep it
+      result.push(api)
+    } else if (local) {
+      // Only local: keep it if it belongs to user and is temp
+      if (local.userId === userId && local.id.startsWith('temp-')) {
+        result.push(local)
+      }
     }
+  }
 
-    return true
-  })
-
-  return [...apiTasks, ...localOnly]
+  return result
 }
 
 interface TaskState {
@@ -180,11 +191,13 @@ export const useTaskStore = create<TaskState>()(
         const userId = useAuthStore.getState().user?.id
         if (!userId) return
 
+        const now = new Date().toISOString()
         const tempId = `temp-${crypto.randomUUID()}`
         const tempTask: Task = {
           ...taskData,
           id: tempId,
-          createdAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now,
           subtasks: taskData.subtasks || [],
           tags: taskData.tags || [],
           linkedNoteIds: taskData.linkedNoteIds || [],
@@ -205,8 +218,9 @@ export const useTaskStore = create<TaskState>()(
       },
 
       updateTask: async (id, updates) => {
+        const now = new Date().toISOString()
         set((s) => ({
-          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: now } : t)),
         }))
         // Don't attempt API for temp IDs
         if (id.startsWith('temp-')) return

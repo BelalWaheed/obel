@@ -5,6 +5,7 @@ import { useAuthStore } from './authStore'
 import { useTaskStore } from './taskStore'
 import { useCoffeeStore } from './coffeeStore'
 import { wakeLockSystem } from '@/lib/wakeLock'
+import { notificationSystem } from '@/lib/notifications'
 
 export type TimerMode = 'focus' | 'shortBreak' | 'longBreak' | 'coffeeBreak'
 
@@ -113,15 +114,15 @@ export const useTimerStore = create<TimerState>()(
           isRunning: false,
         })
         stopGlobalTick()
-        import('@/lib/notifications').then(({ notificationSystem }) => {
-          notificationSystem.cancelScheduled('obel-timer')
-        })
+        const userId = useAuthStore.getState().user?.id
+        notificationSystem.cancelScheduled('obel-timer', userId)
       },
 
       start: (taskId) => {
         if (get().isRunning) return
         const now = Date.now()
         const endTime = now + get().timeRemaining * 1000
+        const userId = useAuthStore.getState().user?.id
         set({
           isRunning: true,
           expectedEndTime: endTime,
@@ -130,36 +131,35 @@ export const useTimerStore = create<TimerState>()(
 
         const { mode, settings } = get()
         if (settings.notificationsEnabled) {
-          import('@/lib/notifications').then(({ notificationSystem }) => {
-            const modeNames: Record<TimerMode, string> = {
-              focus: 'Focus',
-              shortBreak: 'Short Break',
-              longBreak: 'Long Break',
-              coffeeBreak: 'Coffee Break',
-            }
-            notificationSystem.schedule(
-              `${modeNames[mode]} session finished!`,
-              endTime,
-              'obel-timer',
-              { body: 'Time to switch modes.' }
-            )
-          })
+          const modeNames: Record<TimerMode, string> = {
+            focus: 'Focus',
+            shortBreak: 'Short Break',
+            longBreak: 'Long Break',
+            coffeeBreak: 'Coffee Break',
+          }
+          notificationSystem.schedule(
+            `${modeNames[mode]} session finished!`,
+            endTime,
+            'obel-timer',
+            userId,
+            { body: 'Time to switch modes.' }
+          )
         }
         startGlobalTick()
         wakeLockSystem.request()
       },
 
       pause: () => {
+        const userId = (useAuthStore.getState() as { user: { id: string } }).user?.id
         set({ isRunning: false, expectedEndTime: null })
         stopGlobalTick()
+        notificationSystem.cancelScheduled('obel-timer', userId)
         wakeLockSystem.release()
-        import('@/lib/notifications').then(({ notificationSystem }) => {
-          notificationSystem.cancelScheduled('obel-timer')
-        })
       },
 
       reset: () => {
         const { mode, settings } = get()
+        const userId = (useAuthStore.getState() as { user: { id: string } }).user?.id
         set({
           isRunning: false,
           expectedEndTime: null,
@@ -167,14 +167,13 @@ export const useTimerStore = create<TimerState>()(
           activeTaskId: null,
         })
         stopGlobalTick()
+        notificationSystem.cancelScheduled('obel-timer', userId)
         wakeLockSystem.release()
-        import('@/lib/notifications').then(({ notificationSystem }) => {
-          notificationSystem.cancelScheduled('obel-timer')
-        })
       },
 
       skip: () => {
         const { mode, settings, sessionsCompleted } = get()
+        const userId = (useAuthStore.getState() as { user: { id: string } }).user?.id
         let nextMode: TimerMode
         if (mode === 'focus') {
           const nextSession = sessionsCompleted + 1
@@ -183,6 +182,9 @@ export const useTimerStore = create<TimerState>()(
         } else {
           nextMode = 'focus'
         }
+        
+        notificationSystem.cancelScheduled('obel-timer', userId)
+        
         set({
           mode: nextMode,
           timeRemaining: getDurationForMode(nextMode, settings),
@@ -286,23 +288,25 @@ export const useTimerStore = create<TimerState>()(
           import('@/lib/sounds').then(({ soundSystem }) => soundSystem.playChime())
         }
         if (settings.notificationsEnabled) {
-          import('@/lib/notifications').then(({ notificationSystem }) => {
-            const title = nextMode === 'focus' ? 'Break Over!' : 'Session Complete!'
-            notificationSystem.send(title, { body: 'Time to switch modes.' })
-            if (shouldAutoStart) {
-              const modeNames: Record<TimerMode, string> = {
-                focus: 'Focus',
-                shortBreak: 'Short Break',
-                longBreak: 'Long Break',
-                coffeeBreak: 'Coffee Break',
-              }
-              notificationSystem.schedule(
-                `${modeNames[nextMode]} session finished!`,
-                Date.now() + nextDuration * 1000,
-                'obel-timer',
-              )
+          const userId = useAuthStore.getState().user?.id
+          const title = nextMode === 'focus' ? 'Break Over!' : 'Session Complete!'
+          notificationSystem.send(title, { body: 'Time to switch modes.' })
+          
+          if (shouldAutoStart) {
+            const modeNames: Record<TimerMode, string> = {
+              focus: 'Focus',
+              shortBreak: 'Short Break',
+              longBreak: 'Long Break',
+              coffeeBreak: 'Coffee Break',
             }
-          })
+            notificationSystem.schedule(
+              `${modeNames[nextMode]} session finished!`,
+              Date.now() + nextDuration * 1000,
+              'obel-timer',
+              userId,
+              { body: 'Next session starting...' }
+            )
+          }
         }
 
         if (shouldAutoStart) {
@@ -398,21 +402,21 @@ export const useTimerStore = create<TimerState>()(
 
           // Re-schedule the notification with the correct remaining time
           if (settings.notificationsEnabled) {
-            import('@/lib/notifications').then(({ notificationSystem }) => {
-              const modeNames: Record<TimerMode, string> = {
-                focus: 'Focus',
-                shortBreak: 'Short Break',
-                longBreak: 'Long Break',
-                coffeeBreak: 'Coffee Break',
-              }
-              notificationSystem.cancelScheduled('obel-timer')
-              notificationSystem.schedule(
-                `${modeNames[mode]} session finished!`,
-                expectedEndTime,
-                'obel-timer',
-                { body: 'Time to switch modes.' }
-              )
-            })
+            const userId = useAuthStore.getState().user?.id
+            const modeNames: Record<TimerMode, string> = {
+              focus: 'Focus',
+              shortBreak: 'Short Break',
+              longBreak: 'Long Break',
+              coffeeBreak: 'Coffee Break',
+            }
+            notificationSystem.cancelScheduled('obel-timer', userId)
+            notificationSystem.schedule(
+              `${modeNames[mode]} session finished!`,
+              expectedEndTime,
+              'obel-timer',
+              userId,
+              { body: 'Time to switch modes.' }
+            )
           }
           
           // Re-request wake lock if we are resuming an active timer
