@@ -23,7 +23,7 @@ export interface PomodoroSettings {
 export interface SessionHistory {
   id?: string
   mode: TimerMode
-  duration: number // in seconds
+  duration: number // seconds
   completedAt: string // ISO string
 }
 
@@ -54,37 +54,100 @@ interface TimerState {
   setHasHydrated: (val: boolean) => void
 }
 
-let globalTimerInterval: ReturnType<typeof setInterval> | null = null
+// ── SW TIMER BRIDGE ──────────────────────────────────────────────────────────
+// Posts messages to the service worker to drive the timer from the SW context,
+// which survives tab throttling and backgrounding on mobile.
 
-function startGlobalTick() {
-  if (globalTimerInterval) return
-  globalTimerInterval = setInterval(() => {
-    const state = useTimerStore.getState()
-    if (state.isRunning) {
-      // Only tick if the page is visible to save CPU/Battery
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        state.tick()
-      }
-    }
-  }, 1000) // 1s is enough for background logic, UI can interpolate if needed
-}
-
-function stopGlobalTick() {
-  if (globalTimerInterval) {
-    clearInterval(globalTimerInterval)
-    globalTimerInterval = null
+async function sendToSW(message: Record<string, unknown>) {
+  if (!('serviceWorker' in navigator)) return
+  try {
+    const reg = await navigator.serviceWorker.ready
+    if (reg.active) reg.active.postMessage(message)
+  } catch {
+    // SW not yet active — fall back to main-thread interval (see below)
   }
 }
 
+function startSWTimer(expectedEndTime: number) {
+  sendToSW({ type: 'START_SW_TIMER', expectedEndTime })
+}
+
+function stopSWTimer() {
+  sendToSW({ type: 'STOP_SW_TIMER' })
+}
+
+// ── MAIN-THREAD FALLBACK INTERVAL ────────────────────────────────────────────
+// Used only when the SW is unavailable (first load / dev mode).
+let fallbackInterval: ReturnType<typeof setInterval> | null = null
+
+function startFallbackTick() {
+  if (fallbackInterval) return
+  fallbackInterval = setInterval(() => {
+    const state = useTimerStore.getState()
+    if (state.isRunning && document.visibilityState === 'visible') {
+      state.tick()
+    }
+  }, 1000)
+}
+
+function stopFallbackTick() {
+  if (fallbackInterval) {
+    clearInterval(fallbackInterval)
+    fallbackInterval = null
+  }
+}
+
+// ── SW MESSAGE LISTENER ───────────────────────────────────────────────────────
+// Set up once at module level so it persists across store updates.
+let swListenerAttached = false
+
+function attachSWListener() {
+  if (swListenerAttached || !('serviceWorker' in navigator)) return
+  swListenerAttached = true
+
+  navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+    const data = event.data as {
+      type: string
+      remaining?: number
+      expectedEndTime?: number
+    }
+
+    if (data?.type === 'SW_TIMER_TICK') {
+      const state = useTimerStore.getState()
+      if (!state.isRunning) return
+      const remaining = data.remaining ?? 0
+      useTimerStore.setState({ timeRemaining: remaining })
+      if (remaining === 0) {
+        state.tick() // will trigger completeSession
+      }
+    }
+
+    if (data?.type === 'SW_TIMER_EXPIRED') {
+      const state = useTimerStore.getState()
+      if (state.isRunning) {
+        useTimerStore.setState({ timeRemaining: 0 })
+        state.tick()
+      }
+    }
+  })
+}
+
+// Attach listener immediately (safe to call before SW is ready)
+if (typeof window !== 'undefined') {
+  attachSWListener()
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 function getDurationForMode(mode: TimerMode, settings: PomodoroSettings): number {
   switch (mode) {
-    case 'focus': return settings.focusDuration * 60
-    case 'shortBreak': return settings.shortBreakDuration * 60
-    case 'longBreak': return settings.longBreakDuration * 60
+    case 'focus':       return settings.focusDuration * 60
+    case 'shortBreak':  return settings.shortBreakDuration * 60
+    case 'longBreak':   return settings.longBreakDuration * 60
     case 'coffeeBreak': return 5 * 60
   }
 }
 
+// ── STORE ─────────────────────────────────────────────────────────────────────
 export const useTimerStore = create<TimerState>()(
   persist(
     (set, get) => ({
@@ -106,37 +169,44 @@ export const useTimerStore = create<TimerState>()(
       sessionHistory: [],
       activeTaskId: null,
 
+      // ── setMode ─────────────────────────────────────────────────────────────
       setMode: (mode) => {
         const { settings } = get()
+        stopSWTimer()
+        stopFallbackTick()
+        const userId = useAuthStore.getState().user?.id
+        notificationSystem.cancelScheduled('obel-timer', userId)
         set({
           mode,
           timeRemaining: getDurationForMode(mode, settings),
           expectedEndTime: null,
           isRunning: false,
         })
-        stopGlobalTick()
-        const userId = useAuthStore.getState().user?.id
-        notificationSystem.cancelScheduled('obel-timer', userId)
       },
 
+      // ── start ────────────────────────────────────────────────────────────────
       start: (taskId) => {
         if (get().isRunning) return
-        const now = Date.now()
-        const endTime = now + get().timeRemaining * 1000
+        const endTime = Date.now() + get().timeRemaining * 1000
         const userId = useAuthStore.getState().user?.id
+
         set({
           isRunning: true,
           expectedEndTime: endTime,
           activeTaskId: taskId !== undefined ? taskId : get().activeTaskId,
         })
 
+        // Drive from SW (survives background throttling)
+        startSWTimer(endTime)
+        // Fallback for when SW isn't available yet
+        startFallbackTick()
+        wakeLockSystem.request()
+
         const { mode, settings } = get()
         if (settings.notificationsEnabled) {
           const modeNames: Record<TimerMode, string> = {
-            focus: 'Focus',
-            shortBreak: 'Short Break',
-            longBreak: 'Long Break',
-            coffeeBreak: 'Coffee Break',
+            focus: 'Focus', shortBreak: 'Short Break',
+            longBreak: 'Long Break', coffeeBreak: 'Coffee Break',
           }
           notificationSystem.schedule(
             `${modeNames[mode]} session finished!`,
@@ -146,46 +216,51 @@ export const useTimerStore = create<TimerState>()(
             { body: 'Time to switch modes.' }
           )
         }
-        startGlobalTick()
-        wakeLockSystem.request()
       },
 
+      // ── pause ────────────────────────────────────────────────────────────────
       pause: () => {
-        const userId = (useAuthStore.getState() as { user: { id: string } }).user?.id
-        set({ isRunning: false, expectedEndTime: null })
-        stopGlobalTick()
+        stopSWTimer()
+        stopFallbackTick()
+        const userId = useAuthStore.getState().user?.id
         notificationSystem.cancelScheduled('obel-timer', userId)
         wakeLockSystem.release()
+        set({ isRunning: false, expectedEndTime: null })
       },
 
+      // ── reset ────────────────────────────────────────────────────────────────
       reset: () => {
+        stopSWTimer()
+        stopFallbackTick()
         const { mode, settings } = get()
-        const userId = (useAuthStore.getState() as { user: { id: string } }).user?.id
+        const userId = useAuthStore.getState().user?.id
+        notificationSystem.cancelScheduled('obel-timer', userId)
+        wakeLockSystem.release()
         set({
           isRunning: false,
           expectedEndTime: null,
           timeRemaining: getDurationForMode(mode, settings),
           activeTaskId: null,
         })
-        stopGlobalTick()
-        notificationSystem.cancelScheduled('obel-timer', userId)
-        wakeLockSystem.release()
       },
 
+      // ── skip ─────────────────────────────────────────────────────────────────
       skip: () => {
+        stopSWTimer()
+        stopFallbackTick()
         const { mode, settings, sessionsCompleted } = get()
-        const userId = (useAuthStore.getState() as { user: { id: string } }).user?.id
+        const userId = useAuthStore.getState().user?.id
+        notificationSystem.cancelScheduled('obel-timer', userId)
+        wakeLockSystem.release()
+
         let nextMode: TimerMode
         if (mode === 'focus') {
           const nextSession = sessionsCompleted + 1
-          nextMode =
-            nextSession % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak'
+          nextMode = nextSession % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak'
         } else {
           nextMode = 'focus'
         }
-        
-        notificationSystem.cancelScheduled('obel-timer', userId)
-        
+
         set({
           mode: nextMode,
           timeRemaining: getDurationForMode(nextMode, settings),
@@ -193,60 +268,46 @@ export const useTimerStore = create<TimerState>()(
           isRunning: false,
           activeTaskId: null,
         })
-        stopGlobalTick()
-        wakeLockSystem.release()
-        import('@/lib/notifications').then(({ notificationSystem }) => {
-          notificationSystem.cancelScheduled('obel-timer')
-        })
       },
 
+      // ── tick ─────────────────────────────────────────────────────────────────
+      // Called by both the SW message handler and the fallback interval.
       tick: () => {
-        const {
-          expectedEndTime,
-          isRunning,
-        } = get()
+        const { expectedEndTime, isRunning } = get()
         if (!isRunning || !expectedEndTime) return
 
-        const now = Date.now()
-        const remaining = Math.max(0, Math.ceil((expectedEndTime - now) / 1000))
+        const remaining = Math.max(0, Math.ceil((expectedEndTime - Date.now()) / 1000))
         set({ timeRemaining: remaining })
-
         if (remaining > 0) return
 
-        // ── Session completed ──────────────────────────────────────────
         get().completeSession()
       },
 
+      // ── completeSession ───────────────────────────────────────────────────────
       completeSession: (manualDuration, taskId) => {
         const {
-          mode,
-          settings,
-          sessionsCompleted,
-          activeTaskId,
-          timeRemaining,
-          isRunning
+          mode, settings, sessionsCompleted, activeTaskId,
+          timeRemaining, isRunning,
         } = get()
 
         const targetTaskId = taskId ?? activeTaskId
 
-        // Stop current timer if running and we are completing the ACTIVE task
         if (isRunning && (!taskId || taskId === activeTaskId)) {
-          stopGlobalTick()
+          stopSWTimer()
+          stopFallbackTick()
           const userId = useAuthStore.getState().user?.id
           notificationSystem.cancelScheduled('obel-timer', userId)
         }
 
-        const finalDuration = manualDuration ?? (
-          (isRunning && (!taskId || taskId === activeTaskId))
-            ? (getDurationForMode(mode, settings) - timeRemaining)
-            : (mode === 'coffeeBreak' ? 5 * 60 : getDurationForMode(mode, settings))
-        )
+        const finalDuration =
+          manualDuration ??
+          (isRunning && (!taskId || taskId === activeTaskId)
+            ? getDurationForMode(mode, settings) - timeRemaining
+            : getDurationForMode(mode, settings))
 
         // Credit focus time to active task
         if (mode === 'focus' && targetTaskId) {
-          const task = useTaskStore
-            .getState()
-            .tasks.find((t) => t.id === targetTaskId)
+          const task = useTaskStore.getState().tasks.find((t) => t.id === targetTaskId)
           useTaskStore.getState().updateTask(targetTaskId, {
             focusSessions: (task?.focusSessions || 0) + 1,
             focusTime: (task?.focusTime || 0) + finalDuration,
@@ -264,35 +325,26 @@ export const useTimerStore = create<TimerState>()(
 
         if (mode === 'focus') {
           newSessionsCompleted = sessionsCompleted + 1
-          nextMode =
-            newSessionsCompleted % settings.longBreakInterval === 0
-              ? 'longBreak'
-              : 'shortBreak'
+          nextMode = newSessionsCompleted % settings.longBreakInterval === 0 ? 'longBreak' : 'shortBreak'
         } else if (mode === 'coffeeBreak') {
           nextMode = 'focus'
-          // Use the new coffee management API
-          useCoffeeStore.getState().addLog({
-            type: 'Coffee Break',
-            caffeineMg: 80,
-            mood: 'Relaxed'
-          })
+          useCoffeeStore.getState().addLog({ type: 'Coffee Break', caffeineMg: 80, mood: 'Relaxed' })
         } else {
           nextMode = 'focus'
         }
 
         const shouldAutoStart =
           (nextMode === 'focus' && settings.autoStartFocus) ||
-          (nextMode !== 'focus' &&
-            (nextMode as string) !== 'coffeeBreak' &&
-            settings.autoStartBreaks)
+          ((nextMode === 'shortBreak' || nextMode === 'longBreak') && settings.autoStartBreaks)
 
         const nextDuration = getDurationForMode(nextMode, settings)
+        const nextEndTime = shouldAutoStart ? Date.now() + nextDuration * 1000 : null
 
         set({
           mode: nextMode,
           timeRemaining: nextDuration,
           isRunning: shouldAutoStart,
-          expectedEndTime: shouldAutoStart ? Date.now() + nextDuration * 1000 : null,
+          expectedEndTime: nextEndTime,
           sessionsCompleted: newSessionsCompleted,
           sessionHistory: [...get().sessionHistory, newHistoryItem],
           activeTaskId: nextMode === 'focus' ? activeTaskId : null,
@@ -310,19 +362,19 @@ export const useTimerStore = create<TimerState>()(
 
         if (settings.notificationsEnabled) {
           const userId = useAuthStore.getState().user?.id
-          const title = nextMode === 'focus' ? 'Break Over!' : 'Session Complete!'
-          notificationSystem.send(title, { body: 'Time to switch modes.' })
-          
-          if (shouldAutoStart) {
+          notificationSystem.send(
+            nextMode === 'focus' ? 'Break Over!' : 'Session Complete! 🍅',
+            { body: 'Time to switch modes.' }
+          )
+
+          if (shouldAutoStart && nextEndTime) {
             const modeNames: Record<TimerMode, string> = {
-              focus: 'Focus',
-              shortBreak: 'Short Break',
-              longBreak: 'Long Break',
-              coffeeBreak: 'Coffee Break',
+              focus: 'Focus', shortBreak: 'Short Break',
+              longBreak: 'Long Break', coffeeBreak: 'Coffee Break',
             }
             notificationSystem.schedule(
               `${modeNames[nextMode]} session finished!`,
-              Date.now() + nextDuration * 1000,
+              nextEndTime,
               'obel-timer',
               userId,
               { body: 'Next session starting...' }
@@ -330,60 +382,54 @@ export const useTimerStore = create<TimerState>()(
           }
         }
 
-        if (shouldAutoStart) {
-          startGlobalTick()
+        if (shouldAutoStart && nextEndTime) {
+          startSWTimer(nextEndTime)
+          startFallbackTick()
           wakeLockSystem.request()
         } else {
           wakeLockSystem.release()
         }
       },
 
+      // ── updateSettings ────────────────────────────────────────────────────────
       updateSettings: async (newSettings) => {
         const { settings, mode, isRunning } = get()
         const merged = { ...settings, ...newSettings }
         const updates: Partial<TimerState> = { settings: merged }
-        if (!isRunning) {
-          updates.timeRemaining = getDurationForMode(mode, merged)
-        }
+        if (!isRunning) updates.timeRemaining = getDurationForMode(mode, merged)
         set(updates)
         await get().saveToUser()
       },
 
       setActiveTaskId: (taskId) => set({ activeTaskId: taskId }),
 
+      // ── loadFromUser ──────────────────────────────────────────────────────────
       loadFromUser: async () => {
         const user = useAuthStore.getState().user
         if (!user) return
         try {
-          const settings = JSON.parse(
-            user.pomodoroSettings || '{}'
-          ) as Partial<PomodoroSettings>
-          const history = JSON.parse(
-            user.sessionHistory || '[]'
-          ) as SessionHistory[]
-
+          const settings = JSON.parse(user.pomodoroSettings || '{}') as Partial<PomodoroSettings>
+          const history = JSON.parse(user.sessionHistory || '[]') as SessionHistory[]
           const merged: PomodoroSettings = {
-            focusDuration: settings.focusDuration ?? 25,
-            shortBreakDuration: settings.shortBreakDuration ?? 5,
-            longBreakDuration: settings.longBreakDuration ?? 15,
-            longBreakInterval: settings.longBreakInterval ?? 4,
-            autoStartBreaks: settings.autoStartBreaks ?? false,
-            autoStartFocus: settings.autoStartFocus ?? false,
-            soundEnabled: settings.soundEnabled ?? true,
+            focusDuration:       settings.focusDuration       ?? 25,
+            shortBreakDuration:  settings.shortBreakDuration  ?? 5,
+            longBreakDuration:   settings.longBreakDuration   ?? 15,
+            longBreakInterval:   settings.longBreakInterval   ?? 4,
+            autoStartBreaks:     settings.autoStartBreaks     ?? false,
+            autoStartFocus:      settings.autoStartFocus      ?? false,
+            soundEnabled:        settings.soundEnabled         ?? true,
             notificationsEnabled: settings.notificationsEnabled ?? true,
           }
-
           set({ settings: merged, sessionHistory: history })
-
-          // Only reset timeRemaining if not currently running
           if (!get().isRunning) {
             set({ timeRemaining: getDurationForMode(get().mode, merged) })
           }
         } catch {
-          // Use defaults
+          // use defaults
         }
       },
 
+      // ── saveToUser ────────────────────────────────────────────────────────────
       saveToUser: async () => {
         const { settings, sessionHistory } = get()
         const user = useAuthStore.getState().user
@@ -391,44 +437,47 @@ export const useTimerStore = create<TimerState>()(
         const totalFocusSeconds = sessionHistory
           .filter((s) => s.mode === 'focus')
           .reduce((acc, s) => acc + s.duration, 0)
-        const totalFocusHours = (totalFocusSeconds / 3600).toFixed(1)
         await useAuthStore.getState().updateUser({
           pomodoroSettings: JSON.stringify(settings),
           sessionHistory: JSON.stringify(sessionHistory.slice(-100)),
-          totalFocusHours,
+          totalFocusHours: (totalFocusSeconds / 3600).toFixed(1),
         })
       },
 
-      // ── CRITICAL FIX: handle timer that expired while app was closed ──
+      // ── resumeTick ────────────────────────────────────────────────────────────
+      // Called on visibilitychange and on first hydration.
+      // Syncs wall-clock time and re-attaches SW timer.
       resumeTick: () => {
         const { isRunning, expectedEndTime, mode, settings } = get()
+
         if (!isRunning || !expectedEndTime) {
-          // If we are not running, but we have a timer interval, clear it
-          if (!isRunning) stopGlobalTick()
+          stopSWTimer()
+          stopFallbackTick()
           return
         }
 
         const now = Date.now()
 
         if (now >= expectedEndTime) {
-          // Timer expired while the app was closed — force to 0 then complete
+          // Timer expired while tab was hidden — complete immediately
           set({ timeRemaining: 0 })
-          // Small delay so persisted state settles before completion logic runs
-          setTimeout(() => get().tick(), 150)
+          setTimeout(() => get().tick(), 100)
         } else {
-          // Still running — sync remaining time with wall clock and resume
+          // Still running — re-sync remaining from wall clock
           const remaining = Math.ceil((expectedEndTime - now) / 1000)
           set({ timeRemaining: remaining, isRunning: true })
-          startGlobalTick()
 
-          // Re-schedule the notification with the correct remaining time
+          // Re-start SW timer and fallback
+          startSWTimer(expectedEndTime)
+          startFallbackTick()
+          wakeLockSystem.request()
+
+          // Re-schedule push notification
           if (settings.notificationsEnabled) {
             const userId = useAuthStore.getState().user?.id
             const modeNames: Record<TimerMode, string> = {
-              focus: 'Focus',
-              shortBreak: 'Short Break',
-              longBreak: 'Long Break',
-              coffeeBreak: 'Coffee Break',
+              focus: 'Focus', shortBreak: 'Short Break',
+              longBreak: 'Long Break', coffeeBreak: 'Coffee Break',
             }
             notificationSystem.cancelScheduled('obel-timer', userId)
             notificationSystem.schedule(
@@ -439,9 +488,6 @@ export const useTimerStore = create<TimerState>()(
               { body: 'Time to switch modes.' }
             )
           }
-          
-          // Re-request wake lock if we are resuming an active timer
-          wakeLockSystem.request()
         }
       },
 
@@ -455,16 +501,13 @@ export const useTimerStore = create<TimerState>()(
         state?.setHasHydrated(true)
       },
       partialize: (state) => ({
-        settings: state.settings,
+        settings:          state.settings,
         sessionsCompleted: state.sessionsCompleted,
-        sessionHistory: state.sessionHistory,
-        // CRITICAL: We no longer persist timeRemaining every 500ms.
-        // Instead, we recalculate it from expectedEndTime on resume.
-        // This saves massive amounts of Disk I/O and battery.
-        mode: state.mode,
-        activeTaskId: state.activeTaskId,
-        expectedEndTime: state.expectedEndTime,
-        isRunning: state.isRunning,
+        sessionHistory:    state.sessionHistory,
+        mode:              state.mode,
+        activeTaskId:      state.activeTaskId,
+        expectedEndTime:   state.expectedEndTime,
+        isRunning:         state.isRunning,
       }),
     }
   )
